@@ -167,10 +167,16 @@ th{background:#111827;color:#cbd5e1}
   <!-- HOME -->
   <section id="page-home" class="page active">
     <div class="container">
-      <div class="section-title">🏆 Líder geral</div>
-      <div id="home-leader-geral" class="leaders"></div>
-      <div class="section-title">📅 Líder do mês</div>
-      <div id="home-leader-mensal" class="leaders"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div>
+          <div class="section-title">🏆 Líder geral</div>
+          <div id="home-leader-geral"></div>
+        </div>
+        <div>
+          <div class="section-title">📅 Líder do mês</div>
+          <div id="home-leader-mensal"></div>
+        </div>
+      </div>
       <div id="home-me" class="card"></div>
       <div class="card" style="text-align:center">
         <h2>⏰ PRÓXIMO FECHAMENTO</h2>
@@ -232,7 +238,7 @@ th{background:#111827;color:#cbd5e1}
       </div>
       <div id="rank-panel-geral">
         <div class="section-title">1º lugar geral</div>
-        <div id="rank-leader-geral" class="leaders"></div>
+        <div id="rank-leader-geral"></div>
         <div class="card">
           <h2>Classificação geral</h2>
           <div class="table-wrap">
@@ -249,7 +255,7 @@ th{background:#111827;color:#cbd5e1}
           <select id="rank-month-select" style="max-width:180px"></select>
         </div>
         <div class="section-title">1º lugar do mês</div>
-        <div id="rank-leader-mensal" class="leaders"></div>
+        <div id="rank-leader-mensal"></div>
         <div class="card">
           <h2 id="rank-mensal-title">Classificação mensal</h2>
           <div class="table-wrap">
