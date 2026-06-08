@@ -58,7 +58,11 @@ input,select{width:100%;background:#e5e7eb;color:#111827;border:0;border-radius:
 .countdown-card{min-width:190px;background:linear-gradient(135deg,#1e3a5f,#132238);border:1px solid rgba(212,175,55,.35);border-radius:16px;padding:12px 14px;text-align:center}
 .countdown-time{font-size:22px;font-weight:800;color:var(--gold)}
 .day{margin-top:24px;margin-bottom:6px;font-size:19px;font-weight:800}
-.prediction-row{display:grid;grid-template-columns:1.3fr auto 22px auto 1.3fr 72px;gap:8px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--line)}
+.prediction-row{display:grid;grid-template-columns:1.3fr auto 22px auto 1.3fr 72px;gap:8px;align-items:center;padding:10px 8px;border-bottom:1px solid var(--line)}
+.first-goal-row{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;border-bottom:1px solid var(--line);font-size:13px}
+.first-goal-row input{background:#1e2d45;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:600;flex:1;max-width:260px}
+.first-goal-row input::placeholder{color:var(--muted);font-weight:400}
+.first-goal-row input:disabled{opacity:.5}
 .team-r{text-align:right;font-weight:700}
 .team-l{text-align:left;font-weight:700}
 .game-time{text-align:right;color:var(--muted);font-size:12px}
@@ -358,13 +362,14 @@ const MONTH_NAMES = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
 // ── ESTADO ─────────────────────────────────────────────────────────────────
 const ST = {
   user:              null,
-  predictions:       {},   // {pid: {roundNum: {eventId:{home,away}}}}
+  predictions:       {},   // {pid: {roundNum: {eventId:{home,away,firstGoal}}}}
   results:           {},   // {eventId: {home,away}}  — override do admin
+  firstGoals:        {},   // {eventId: playerName|null}  — cache da API/admin
   pins:              {},
   deadlines:         {},   // {roundNum: isoString}
-  roundMeta:         {},   // {roundNum: {month, firstDate}}  — derivado dos jogos
-  games:             {},   // {roundNum: [evento...]}  — da API
-  allRounds:         [],   // [1,2,3,...] ordenados
+  roundMeta:         {},   // {roundNum: {month}}
+  games:             {},   // {roundNum: [evento...]}
+  allRounds:         [],
   predRound:         null,
   troopRound:        null,
   adminResultsRound: null,
@@ -442,7 +447,6 @@ function roundMonth(rNum){
 // Placar real: usa override do admin se existir, senão usa dado da API
 function getResult(eventId){
   if(ST.results[eventId]) return ST.results[eventId];
-  // busca nos dados da API
   for(const rNum of ST.allRounds){
     const g=(ST.games[rNum]||[]).find(e=>e.idEvent===eventId);
     if(g && g.intHomeScore!=null && g.intAwayScore!=null && g.strStatus==="FT"){
@@ -452,23 +456,66 @@ function getResult(eventId){
   return null;
 }
 
+// Primeiro gol: usa override do admin se existir, senão usa cache da API
+function getFirstGoal(eventId){
+  if(ST.firstGoals[eventId]!==undefined) return ST.firstGoals[eventId]; // null = sem gol
+  return null; // ainda não carregado
+}
+
+// Busca timeline de um jogo e extrai o primeiro gol
+async function fetchFirstGoal(eventId){
+  if(ST.firstGoals[eventId]!==undefined) return;
+  try{
+    const res=await fetch(`${TSDB}/lookuptimeline.php?id=${eventId}`);
+    const data=await res.json();
+    const goals=(data.timeline||[])
+      .filter(e=>e.strTimeline==="Goal")
+      .sort((a,b)=>+a.intTime - +b.intTime);
+    ST.firstGoals[eventId] = goals.length ? goals[0].strPlayer : null;
+  } catch(e){
+    ST.firstGoals[eventId]=null;
+  }
+}
+
 // ── PONTUAÇÃO ──────────────────────────────────────────────────────────────
+// Regras:
+//   25 pts — placar exato (cravar)
+//   10 pts — acertou vencedor/empate mas NÃO cravou o placar
+//    5 pts — acertou o primeiro gol (acumula com 25 ou 10)
+function calcGameScore(pred, res, predFirstGoal, realFirstGoal){
+  if(!res||res.home==null||res.away==null) return {pts:0,exact:false,correct:false,goalPt:false};
+  if(!pred||pred.home==null||pred.away==null) return {pts:0,exact:false,correct:false,goalPt:false};
+  const pH=+pred.home,pA=+pred.away,rH=+res.home,rA=+res.away;
+  let pts=0,exact=false,correct=false;
+  if(pH===rH&&pA===rA){ pts=25; exact=true; correct=true; }
+  else if(Math.sign(pH-pA)===Math.sign(rH-rA)){ pts=10; correct=true; }
+  // primeiro gol: +5 se acertou (case-insensitive, ignora acentos)
+  let goalPt=false;
+  if(predFirstGoal && realFirstGoal){
+    const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+    if(norm(predFirstGoal)===norm(realFirstGoal)){ pts+=5; goalPt=true; }
+  }
+  return {pts,exact,correct,goalPt};
+}
+
 function calcScore(pid, monthFilter=null){
-  let pts=0,exact=0,correct=0;
+  let pts=0,exact=0,correct=0,goalPts=0;
   for(const rNum of ST.allRounds){
     if(monthFilter!==null && roundMonth(rNum)!==monthFilter) continue;
     const roundPreds=(ST.predictions[pid]||{})[rNum]||{};
     (ST.games[rNum]||[]).forEach(g=>{
       const res=getResult(g.idEvent);
       const pred=roundPreds[g.idEvent];
-      if(!res||res.home==null||res.away==null) return;
-      if(!pred||pred.home==null||pred.away==null) return;
-      const pH=+pred.home,pA=+pred.away,rH=+res.home,rA=+res.away;
-      if(pH===rH&&pA===rA){pts+=3;exact++;correct++;}
-      else if(Math.sign(pH-pA)===Math.sign(rH-rA)){pts+=1;correct++;}
+      const realFG=getFirstGoal(g.idEvent);
+      const predFG=pred?.firstGoal||null;
+      const sc=calcGameScore(pred,res,predFG,realFG);
+      pts+=sc.pts;
+      if(sc.exact) exact++;
+      if(sc.correct) correct++;
+      if(sc.goalPt) goalPts++;
     });
   }
-  return {pts,exact,correct};
+  return {pts,exact,correct,goalPts};
 }
 function buildRanking(monthFilter=null){
   return PARTICIPANTS
@@ -650,6 +697,9 @@ function renderPalpites(){
     html+=`<div class="day">${fmtDate(date)}/2026</div>`;
     gs.forEach(g=>{
       const p=myPreds[g.idEvent]||{};
+      const realFG=getFirstGoal(g.idEvent);
+      // se jogo encerrado e temos primeiro gol real, mostra
+      const fgHint = realFG ? `<span style="color:var(--greenText);font-size:12px">✅ ${realFG}</span>` : "";
       html+=`<div class="prediction-row">
         <div class="team-r">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}</div>
         <select class="score-select" data-eid="${g.idEvent}" data-side="home" ${dis}>${scoreOpts(p.home)}</select>
@@ -657,15 +707,27 @@ function renderPalpites(){
         <select class="score-select" data-eid="${g.idEvent}" data-side="away" ${dis}>${scoreOpts(p.away)}</select>
         <div class="team-l">${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}</div>
         <div class="game-time">${fmtTime(g.strTime)}</div>
+      </div>
+      <div class="first-goal-row">
+        <span style="color:var(--muted)">⚽ 1º gol:</span>
+        <input type="text" class="first-goal-input" data-eid="${g.idEvent}"
+          value="${(p.firstGoal||'').replace(/"/g,'&quot;')}"
+          placeholder="Nome do jogador (+5 pts)" ${dis}>
+        ${fgHint}
       </div>`;
     });
   }
   $("pred-games-list").innerHTML=html;
   if(!closed&&!isAdmin) show("pred-save-bar"); else hide("pred-save-bar");
+
+  // carrega timelines dos jogos encerrados desta rodada em background
+  if(closed || isAdmin){
+    games.filter(g=>g.strStatus==="FT").forEach(g=>fetchFirstGoal(g.idEvent));
+  }
 }
 
 // ── RENDER: TROPA ──────────────────────────────────────────────────────────
-function renderTropa(){
+async function renderTropa(){
   if(!ST.allRounds.length){$("troop-content").innerHTML=`<div class="card"><p class="muted loading">Carregando...</p></div>`;return;}
   if(!ST.troopRound) ST.troopRound=ST.allRounds[0];
   fillRoundSelect("troop-round-select", ST.troopRound);
@@ -678,30 +740,48 @@ function renderTropa(){
   const games=ST.games[rNum]||[];
   if(!games.length){$("troop-content").innerHTML=`<div class="card"><p class="muted">Nenhum jogo nesta rodada.</p></div>`;return;}
 
+  // carrega timelines dos jogos encerrados
+  await Promise.all(games.filter(g=>g.strStatus==="FT").map(g=>fetchFirstGoal(g.idEvent)));
+
   let head=`<tr><th class="left" style="min-width:150px">Jogo</th>`;
   PARTICIPANTS.forEach(p=>head+=`<th>${p.name}</th>`);
   head+=`<th>Placar</th></tr>`;
   let rows="";
   games.forEach(g=>{
     const res=getResult(g.idEvent);
+    const realFG=getFirstGoal(g.idEvent);
     rows+=`<tr><td class="left">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)} x ${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}<div class="muted small">${fmtTime(g.strTime)}</div></td>`;
     PARTICIPANTS.forEach(p=>{
       const pr=((ST.predictions[p.id]||{})[rNum]||{})[g.idEvent]||{};
       const isMe=ST.user?.id===p.id;
-      let cell="-";
+      let placar="-";
       if(pr.home!=null&&pr.away!=null){
         let cls="cell";
         if(res&&res.home!=null){
-          const pH=+pr.home,pA=+pr.away,rH=+res.home,rA=+res.away;
-          if(pH===rH&&pA===rA) cls+=" cravou";
-          else if(Math.sign(pH-pA)===Math.sign(rH-rA)) cls+=" acertou";
+          const sc=calcGameScore(pr,res,pr.firstGoal,realFG);
+          if(sc.exact) cls+=" cravou";
+          else if(sc.correct) cls+=" acertou";
           else cls+=" errou";
         }
-        cell=`<span class="${cls}">${pr.home}–${pr.away}</span>`;
+        placar=`<span class="${cls}">${pr.home}–${pr.away}</span>`;
       }
-      rows+=`<td${isMe?' class="me-row"':''}>${cell}</td>`;
+      // linha de primeiro gol
+      let fgCell="";
+      if(pr.firstGoal){
+        let fgCls="";
+        if(realFG){
+          const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+          fgCls=norm(pr.firstGoal)===norm(realFG)
+            ?`style="color:var(--greenText);font-size:11px"`
+            :`style="color:var(--redText);font-size:11px"`;
+        }
+        fgCell=`<div ${fgCls}>⚽ ${pr.firstGoal}</div>`;
+      }
+      rows+=`<td${isMe?' class="me-row"':''}>${placar}${fgCell}</td>`;
     });
-    const rc=res&&res.home!=null?`<b>${res.home}–${res.away}</b>`:`<span class="muted">-</span>`;
+    const rc=res&&res.home!=null
+      ?`<b>${res.home}–${res.away}</b>${realFG?`<div class="muted small">⚽ ${realFG}</div>`:""}`
+      :`<span class="muted">-</span>`;
     rows+=`<td>${rc}</td></tr>`;
   });
   $("troop-content").innerHTML=`<div class="table-wrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
@@ -910,6 +990,11 @@ $("pred-save-btn").onclick=async()=>{
     const eid=el.dataset.eid, side=el.dataset.side;
     if(!preds[eid]) preds[eid]={};
     preds[eid][side]=el.value===""?null:el.value;
+  });
+  document.querySelectorAll(".first-goal-input[data-eid]").forEach(el=>{
+    const eid=el.dataset.eid;
+    if(!preds[eid]) preds[eid]={};
+    preds[eid].firstGoal=el.value.trim()||null;
   });
   if(!ST.predictions[uid]) ST.predictions[uid]={};
   ST.predictions[uid][rNum]=preds;
