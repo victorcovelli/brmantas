@@ -953,9 +953,16 @@ function renderAdminResults(){
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 async function init(){
+  populateParticipantSelect();
+  const savedUser=sessionStorage.getItem("user");
+  if(savedUser){
+    ST.user=JSON.parse(savedUser);
+    await Promise.all([fetchAllGames(), loadSupabase()]);
+    loginSuccess();
+    return;
+  }
   if(sessionStorage.getItem("gate")==="ok") showScreen("login");
   else showScreen("gate");
-  populateParticipantSelect();
 
   setInterval(()=>{
     const nr=nextRound(); if(!nr) return;
@@ -1014,6 +1021,7 @@ $("admin-btn").onclick=async()=>{
 };
 
 function loginSuccess(){
+  sessionStorage.setItem("user", JSON.stringify(ST.user));
   showScreen("app");
   const u=ST.user;
   $("topbar-title").textContent=u.isAdmin?"⚙️ BOLÃO BRASILEIRÃO":"🏆 "+u.name;
@@ -1027,7 +1035,7 @@ function loginSuccess(){
   showPage("home");
 }
 
-$("logout-btn").onclick=()=>{ ST.user=null; showScreen("login"); };
+$("logout-btn").onclick=()=>{ ST.user=null; sessionStorage.removeItem("user"); showScreen("login"); };
 
 document.querySelectorAll(".bottom-nav button[data-page]").forEach(btn=>{
   btn.onclick=()=>showPage(btn.dataset.page);
