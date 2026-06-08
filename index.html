@@ -1019,6 +1019,10 @@ async function init(){
   }
   if(sessionStorage.getItem("gate")==="ok") showScreen("login");
   else showScreen("gate");
+  // carrega participantes do Supabase em background para o select de login ficar correto
+  sb.from("config").select("value").eq("key","participants").maybeSingle().then(({data})=>{
+    if(data?.value?.length){ ST.participants=data.value; populateParticipantSelect(); }
+  });
 
   setInterval(()=>{
     const nr=nextRound(); if(!nr) return;
