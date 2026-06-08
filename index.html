@@ -277,6 +277,7 @@ th{background:#111827;color:#cbd5e1}
         <h2>⚙️ Painel Admin</h2>
         <div class="tabs" style="margin-top:14px">
           <button class="tab active" data-admin-tab="results">Resultados</button>
+          <button class="tab" data-admin-tab="palpites">Palpites</button>
           <button class="tab" data-admin-tab="rounds">Deadlines</button>
           <button class="tab" data-admin-tab="participants">Participantes</button>
           <button class="tab" data-admin-tab="pins">PINs</button>
@@ -286,6 +287,15 @@ th{background:#111827;color:#cbd5e1}
           <select id="admin-results-round" style="max-width:240px;margin-bottom:14px"></select>
           <div id="admin-results-games"></div>
           <button id="admin-save-results-btn" class="btn btn-green">✅ SALVAR RESULTADOS</button>
+        </div>
+        <div id="admin-tab-palpites" class="hidden">
+          <p class="muted small">Edite os palpites de qualquer participante em qualquer rodada.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+            <select id="admin-palpites-participant" style="max-width:220px"><option value="">Participante...</option></select>
+            <select id="admin-palpites-round" style="max-width:180px"></select>
+          </div>
+          <div id="admin-palpites-games"></div>
+          <button id="admin-save-palpites-btn" class="btn btn-green" style="margin-top:10px">💾 SALVAR PALPITES</button>
         </div>
         <div id="admin-tab-rounds" class="hidden">
           <p class="muted small">Prazo de fechamento de cada rodada. A rodada pertence ao mês do seu <b>primeiro jogo</b>.</p>
@@ -932,6 +942,43 @@ async function removeParticipant(id){
   $("admin-pins-list").innerHTML=pinHtml+`</select>`;
 }
 
+function renderAdminPalpites(){
+  const pid=$("admin-palpites-participant").value;
+  const rNum=+$("admin-palpites-round").value;
+  const container=$("admin-palpites-games");
+  if(!pid||!rNum){container.innerHTML=`<p class="muted">Selecione participante e rodada.</p>`;return;}
+  const games=ST.games[rNum]||[];
+  if(!games.length){container.innerHTML=`<p class="muted">Nenhum jogo nesta rodada.</p>`;return;}
+  const preds=((ST.predictions[pid]||{})[rNum])||{};
+  const byDate={};
+  games.forEach(g=>{(byDate[g.dateEvent]=byDate[g.dateEvent]||[]).push(g);});
+  let html="";
+  for(const [date,gs] of Object.entries(byDate)){
+    html+=`<div class="day">${fmtDate(date)}/2026</div>`;
+    gs.forEach(g=>{
+      const p=preds[g.idEvent]||{};
+      const realFG=getFirstGoal(g.idEvent);
+      const fgHint=realFG?`<span style="color:var(--greenText);font-size:12px">✅ ${realFG}</span>`:"";
+      html+=`<div class="prediction-row">
+        <div class="team-r">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}</div>
+        <select class="score-select adm-pal-score" data-eid="${g.idEvent}" data-side="home">${scoreOpts(p.home)}</select>
+        <div style="text-align:center;font-weight:700">X</div>
+        <select class="score-select adm-pal-score" data-eid="${g.idEvent}" data-side="away">${scoreOpts(p.away)}</select>
+        <div class="team-l">${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}</div>
+        <div class="game-time">${fmtTime(g.strTime)}</div>
+      </div>
+      <div class="first-goal-row">
+        <span style="color:var(--muted)">⚽ 1º gol:</span>
+        <input type="text" class="first-goal-input adm-pal-fg" data-eid="${g.idEvent}"
+          value="${(p.firstGoal||'').replace(/"/g,'&quot;')}"
+          placeholder="Nome do jogador (+5 pts)">
+        ${fgHint}
+      </div>`;
+    });
+  }
+  container.innerHTML=html;
+}
+
 function renderAdminResults(){
   const rNum=ST.adminResultsRound, games=ST.games[rNum]||[];
   if(!games.length){$("admin-results-games").innerHTML=`<p class="muted">Nenhum jogo nesta rodada.</p>`;return;}
@@ -1091,11 +1138,46 @@ document.querySelectorAll("[data-admin-tab]").forEach(btn=>{
   btn.onclick=()=>{
     document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    ["results","rounds","participants","pins"].forEach(t=>{
+    ["results","palpites","rounds","participants","pins"].forEach(t=>{
       $("admin-tab-"+t).classList.toggle("hidden",t!==btn.dataset.adminTab);
     });
+    if(btn.dataset.adminTab==="palpites") initAdminPalpitesSelects();
   };
 });
+
+function initAdminPalpitesSelects(){
+  const pSel=$("admin-palpites-participant");
+  const curP=pSel.value;
+  pSel.innerHTML=`<option value="">Participante...</option>`+
+    ST.participants.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+  if(curP) pSel.value=curP;
+  fillRoundSelect("admin-palpites-round", +$("admin-palpites-round").value||ST.allRounds[0]);
+  renderAdminPalpites();
+}
+
+$("admin-palpites-participant").onchange=()=>renderAdminPalpites();
+$("admin-palpites-round").onchange=()=>renderAdminPalpites();
+
+$("admin-save-palpites-btn").onclick=async()=>{
+  const pid=$("admin-palpites-participant").value;
+  const rNum=+$("admin-palpites-round").value;
+  if(!pid||!rNum){alert("Selecione participante e rodada.");return;}
+  const preds={};
+  document.querySelectorAll(".adm-pal-score[data-eid]").forEach(el=>{
+    const eid=el.dataset.eid, side=el.dataset.side;
+    if(!preds[eid]) preds[eid]={};
+    preds[eid][side]=el.value===""?null:el.value;
+  });
+  document.querySelectorAll(".adm-pal-fg[data-eid]").forEach(el=>{
+    const eid=el.dataset.eid;
+    if(!preds[eid]) preds[eid]={};
+    preds[eid].firstGoal=el.value.trim()||null;
+  });
+  if(!ST.predictions[pid]) ST.predictions[pid]={};
+  ST.predictions[pid][rNum]=preds;
+  await upsertPredictions(pid,rNum,preds);
+  toast("💾 Palpites salvos!");
+};
 
 $("admin-results-round").onchange=e=>{ ST.adminResultsRound=+e.target.value; renderAdminResults(); };
 
