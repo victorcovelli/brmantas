@@ -125,21 +125,6 @@ th{background:#111827;color:#cbd5e1}
       <label>Seu nome</label>
       <select id="participant-select">
         <option value="">Selecione...</option>
-        <option value="amadeu">AMADEU</option>
-        <option value="baixinho">BAIXINHO</option>
-        <option value="balta">BALTA</option>
-        <option value="catarino">CATARINO</option>
-        <option value="caue-renan">CAUE RENAN</option>
-        <option value="covelli">COVELLI</option>
-        <option value="diego">DIEGO</option>
-        <option value="fioti">FIOTI</option>
-        <option value="larissa">LARISSA</option>
-        <option value="leo-meira">LÉO MEIRA</option>
-        <option value="luiz">LUIZ</option>
-        <option value="mendes">MENDES</option>
-        <option value="milton">MILTON</option>
-        <option value="nycolas">NYCOLAS</option>
-        <option value="teco">TECO</option>
       </select>
       <label>PIN</label>
       <input id="participant-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4 a 8 números">
@@ -293,6 +278,7 @@ th{background:#111827;color:#cbd5e1}
         <div class="tabs" style="margin-top:14px">
           <button class="tab active" data-admin-tab="results">Resultados</button>
           <button class="tab" data-admin-tab="rounds">Deadlines</button>
+          <button class="tab" data-admin-tab="participants">Participantes</button>
           <button class="tab" data-admin-tab="pins">PINs</button>
         </div>
         <div id="admin-tab-results">
@@ -305,6 +291,14 @@ th{background:#111827;color:#cbd5e1}
           <p class="muted small">Prazo de fechamento de cada rodada. A rodada pertence ao mês do seu <b>primeiro jogo</b>.</p>
           <div id="admin-rounds-form"></div>
           <button id="admin-save-rounds-btn" class="btn btn-green">✅ SALVAR DATAS</button>
+        </div>
+        <div id="admin-tab-participants" class="hidden">
+          <p class="muted small">Adicione ou remova participantes do bolão.</p>
+          <div id="admin-participants-list"></div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+            <input id="admin-new-participant" type="text" placeholder="Nome do novo participante" style="flex:1;max-width:280px;margin-top:0">
+            <button id="admin-add-participant-btn" class="btn btn-green" style="margin-top:0">➕ ADICIONAR</button>
+          </div>
         </div>
         <div id="admin-tab-pins" class="hidden">
           <p class="muted small">Gerencie os PINs dos participantes.</p>
@@ -345,7 +339,7 @@ const GATE_PASS  = "mantas2026";
 const ADMIN_PASS = "admin2026";
 
 // ── PARTICIPANTES ──────────────────────────────────────────────────────────
-const PARTICIPANTS = [
+const PARTICIPANTS_DEFAULT = [
   {id:"amadeu",    name:"AMADEU"},   {id:"baixinho",  name:"BAIXINHO"},
   {id:"balta",     name:"BALTA"},    {id:"catarino",  name:"CATARINO"},
   {id:"caue-renan",name:"CAUE RENAN"},{id:"covelli",   name:"COVELLI"},
@@ -377,6 +371,7 @@ const ST = {
   rankTab:           "geral",
   rankMonth:         new Date().getMonth()+1,
   apiLoaded:         false,
+  participants:      [...PARTICIPANTS_DEFAULT],
 };
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -518,7 +513,7 @@ function calcScore(pid, monthFilter=null){
   return {pts,exact,correct,goalPts};
 }
 function buildRanking(monthFilter=null){
-  return PARTICIPANTS
+  return ST.participants
     .map(p=>({...p,...calcScore(p.id,monthFilter)}))
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.correct-a.correct);
 }
@@ -554,22 +549,32 @@ async function fetchAllGames(){
 
 // ── SUPABASE ───────────────────────────────────────────────────────────────
 async function loadSupabase(){
-  const [predRes,resRes,pinsRes,dlRes]=await Promise.all([
+  const [predRes,resRes,pinsRes,dlRes,partRes]=await Promise.all([
     sb.from("predictions").select("*"),
     sb.from("results").select("*"),
     sb.from("config").select("*").eq("key","pins").maybeSingle(),
     sb.from("config").select("*").eq("key","deadlines").maybeSingle(),
+    sb.from("config").select("*").eq("key","participants").maybeSingle(),
   ]);
   ST.predictions={};
   (predRes.data||[]).forEach(r=>{
     if(!ST.predictions[r.participant_id]) ST.predictions[r.participant_id]={};
-    // round_id salvo como string número da rodada
     ST.predictions[r.participant_id][r.round_id]=r.preds;
   });
   ST.results={};
   (resRes.data||[]).forEach(r=>{ ST.results[r.game_id]={home:r.home,away:r.away}; });
   ST.pins      = pinsRes.data?.value||{};
   ST.deadlines = dlRes.data?.value||{};
+  if(partRes.data?.value?.length) ST.participants=partRes.data.value;
+  populateParticipantSelect();
+}
+function populateParticipantSelect(){
+  const sel=$("participant-select");
+  if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">Selecione...</option>`+
+    ST.participants.map(p=>`<option value="${p.id}">${p.name}</option>`).join("");
+  if(cur) sel.value=cur;
 }
 async function upsertPredictions(pid,rNum,preds){
   await sb.from("predictions").upsert({participant_id:pid,round_id:String(rNum),preds},{onConflict:"participant_id,round_id"});
@@ -744,14 +749,14 @@ async function renderTropa(){
   await Promise.all(games.filter(g=>g.strStatus==="FT").map(g=>fetchFirstGoal(g.idEvent)));
 
   let head=`<tr><th class="left" style="min-width:150px">Jogo</th>`;
-  PARTICIPANTS.forEach(p=>head+=`<th>${p.name}</th>`);
+  ST.participants.forEach(p=>head+=`<th>${p.name}</th>`);
   head+=`<th>Placar</th></tr>`;
   let rows="";
   games.forEach(g=>{
     const res=getResult(g.idEvent);
     const realFG=getFirstGoal(g.idEvent);
     rows+=`<tr><td class="left">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)} x ${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}<div class="muted small">${fmtTime(g.strTime)}</div></td>`;
-    PARTICIPANTS.forEach(p=>{
+    ST.participants.forEach(p=>{
       const pr=((ST.predictions[p.id]||{})[rNum]||{})[g.idEvent]||{};
       const isMe=ST.user?.id===p.id;
       let placar="-";
@@ -865,9 +870,57 @@ function renderAdmin(){
 
   // PINs
   let pinHtml=`<select id="admin-pin-sel" style="margin-bottom:10px"><option value="">Selecione...</option>`;
-  PARTICIPANTS.forEach(p=>{
+  ST.participants.forEach(p=>{
     pinHtml+=`<option value="${p.id}">${p.name} ${ST.pins[p.id]?"✅":"❌ sem PIN"}</option>`;
   });
+  $("admin-pins-list").innerHTML=pinHtml+`</select>`;
+
+  renderAdminParticipants();
+}
+
+function renderAdminParticipants(){
+  const list=$("admin-participants-list");
+  if(!list) return;
+  if(!ST.participants.length){
+    list.innerHTML=`<p class="muted">Nenhum participante cadastrado.</p>`;
+    return;
+  }
+  list.innerHTML=ST.participants.map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a3a">
+      <span>${p.name} <span class="muted small">(${p.id})</span></span>
+      <button class="btn btn-red" style="padding:4px 10px;font-size:12px" onclick="removeParticipant('${p.id}')">Remover</button>
+    </div>`).join("");
+}
+
+async function addParticipant(){
+  const input=$("admin-new-participant");
+  const raw=input.value.trim();
+  if(!raw) return;
+  const name=raw.toUpperCase();
+  const id=raw.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");
+  if(ST.participants.find(p=>p.id===id)){
+    alert("Participante já existe.");
+    return;
+  }
+  ST.participants.push({id,name});
+  await upsertConfig("participants",ST.participants);
+  input.value="";
+  renderAdminParticipants();
+  populateParticipantSelect();
+  // re-render PIN list
+  let pinHtml=`<select id="admin-pin-sel" style="margin-bottom:10px"><option value="">Selecione...</option>`;
+  ST.participants.forEach(p=>{ pinHtml+=`<option value="${p.id}">${p.name} ${ST.pins[p.id]?"✅":"❌ sem PIN"}</option>`; });
+  $("admin-pins-list").innerHTML=pinHtml+`</select>`;
+}
+
+async function removeParticipant(id){
+  if(!confirm(`Remover ${id}? Os palpites dele serão mantidos no banco.`)) return;
+  ST.participants=ST.participants.filter(p=>p.id!==id);
+  await upsertConfig("participants",ST.participants);
+  renderAdminParticipants();
+  populateParticipantSelect();
+  let pinHtml=`<select id="admin-pin-sel" style="margin-bottom:10px"><option value="">Selecione...</option>`;
+  ST.participants.forEach(p=>{ pinHtml+=`<option value="${p.id}">${p.name} ${ST.pins[p.id]?"✅":"❌ sem PIN"}</option>`; });
   $("admin-pins-list").innerHTML=pinHtml+`</select>`;
 }
 
@@ -902,6 +955,7 @@ function renderAdminResults(){
 async function init(){
   if(sessionStorage.getItem("gate")==="ok") showScreen("login");
   else showScreen("gate");
+  populateParticipantSelect();
 
   setInterval(()=>{
     const nr=nextRound(); if(!nr) return;
@@ -945,7 +999,7 @@ $("participant-btn").onclick=async()=>{
   } else {
     if(hashed!==stored){$("participant-error").textContent="PIN incorreto.";return;}
   }
-  const p=PARTICIPANTS.find(x=>x.id===id);
+  const p=ST.participants.find(x=>x.id===id);
   ST.user={id,name:p.name,isAdmin:false};
   await Promise.all([fetchAllGames(), loadSupabase()]);
   loginSuccess();
@@ -1021,7 +1075,7 @@ document.querySelectorAll("[data-admin-tab]").forEach(btn=>{
   btn.onclick=()=>{
     document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    ["results","rounds","pins"].forEach(t=>{
+    ["results","rounds","participants","pins"].forEach(t=>{
       $("admin-tab-"+t).classList.toggle("hidden",t!==btn.dataset.adminTab);
     });
   };
@@ -1046,6 +1100,9 @@ $("admin-save-rounds-btn").onclick=async()=>{
   await upsertConfig("deadlines",ST.deadlines);
   toast();
 };
+
+$("admin-add-participant-btn").onclick=()=>addParticipant();
+$("admin-new-participant").onkeydown=e=>{ if(e.key==="Enter") addParticipant(); };
 
 $("admin-reset-pin-btn").onclick=async()=>{
   const sel=document.getElementById("admin-pin-sel")?.value;
