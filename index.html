@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BOLÃO WC26 MANTAS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f172a;--panel:#111827;--card:#17233a;--gold:#d4af37;
+  --muted:#94a3b8;--line:rgba(255,255,255,.10);
+  --green:#14532d;--greenText:#86efac;
+  --blue:#1e3a8a;--blueText:#bfdbfe;
+  --red:#7f1d1d;--redText:#fecaca;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:linear-gradient(180deg,#0f172a,#111827);color:#fff;font-family:Poppins,Arial,sans-serif}
+button,input,select{font-family:inherit}
+.hidden{display:none!important}
+.screen{min-height:100vh}
+.center{display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{width:min(430px,100%);background:#17233a;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.login-card.wide{width:min(520px,100%)}
+.logo{text-align:center;font-size:48px}
+h1,h2,h3{margin:0}
+.muted{color:var(--muted)}.small{font-size:13px}
+label{display:block;margin:15px 0 6px;font-weight:700}
+input,select{width:100%;background:#e5e7eb;color:#111827;border:0;border-radius:10px;padding:11px;font-weight:700}
+.btn{border:0;border-radius:11px;padding:11px 14px;font-weight:800;cursor:pointer;margin-top:14px}
+.primary{width:100%;background:var(--gold);color:#111827}
+.ghost{background:#25344e;color:#fff;margin:0}
+.btn-green{background:var(--green);color:var(--greenText)}
+.btn-red{background:var(--red);color:var(--redText)}
+.error{color:#fca5a5;font-size:13px;font-weight:700;margin-top:8px}
+.topbar{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 18px;background:rgba(17,24,39,.96);border-bottom:1px solid var(--line)}
+.container{max-width:1120px;margin:auto;padding:18px 18px 96px}
+.page{display:none}.page.active{display:block}
+.card{background:#17233a;border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+.top3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.podium{text-align:center}
+.podium.gold{border:2px solid #d4af37}
+.podium.silver{border:2px solid #c0c0c0}
+.podium.bronze{border:2px solid #cd7f32}
+.big{font-size:28px;font-weight:800}
+.count{text-align:center;font-size:31px;font-weight:800;color:var(--gold)}
+.result{padding:10px 0;border-bottom:1px solid var(--line)}
+.status-badge{padding:8px 12px;border-radius:12px;display:inline-block;font-weight:800;font-size:13px}
+.ok{background:rgba(20,83,45,.8);color:#86efac}
+.warn{background:rgba(245,158,11,.18);color:#fcd34d;border:1px solid rgba(245,158,11,.35)}
+.lock{background:rgba(30,58,138,.85);color:#bfdbfe}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.tab{border:1px solid var(--line);background:#17233a;color:white;padding:10px 14px;border-radius:999px;font-weight:700;cursor:pointer}
+.tab.active{background:var(--gold);color:#111827}
+.countdown-card{min-width:190px;background:linear-gradient(135deg,#1e3a5f,#132238);border:1px solid rgba(212,175,55,.35);border-radius:16px;padding:12px 14px;text-align:center}
+.countdown-time{font-size:22px;font-weight:800;color:var(--gold)}
+.day{margin-top:24px;margin-bottom:6px;font-size:19px;font-weight:800}
+.prediction-row{display:grid;grid-template-columns:1.25fr auto 22px auto 1.25fr 80px;gap:8px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--line)}
+.team-r{text-align:right;font-weight:700}
+.team-l{text-align:left;font-weight:700}
+.game-time{text-align:right;color:var(--muted);font-size:12px}
+.score-select{width:56px;padding:7px}
+.table-wrap{overflow-x:auto;border-radius:16px;border:1px solid var(--line)}
+table{width:100%;min-width:600px;border-collapse:collapse;background:#101827}
+th,td{padding:11px 10px;border-bottom:1px solid var(--line);text-align:center;font-size:13px}
+th{background:#111827;color:#cbd5e1}
+.left{text-align:left}
+.me-row{background:rgba(212,175,55,.1)}
+.cell{font-weight:800;border-radius:10px;padding:6px 10px;display:inline-block;min-width:52px}
+.cravou{background:rgba(20,83,45,.9);color:var(--greenText)}
+.acertou{background:rgba(30,58,138,.9);color:var(--blueText)}
+.errou{background:rgba(127,29,29,.9);color:var(--redText)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#111827;border-top:1px solid var(--line);padding:9px 7px;display:flex;justify-content:space-around;z-index:30}
+.bottom-nav button{min-width:52px;background:none;border:0;color:#cbd5e1;font-size:17px;cursor:pointer}
+.bottom-nav span.label{display:block;font-size:10px}
+.bottom-nav button.active{color:#facc15;font-weight:800}
+.flag-img{width:24px;height:18px;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.18);vertical-align:-3px;margin:0 5px}
+.team-inline{display:inline-flex;align-items:center;gap:2px}
+.saving-toast{position:fixed;top:70px;right:18px;background:#14532d;color:#86efac;padding:8px 16px;border-radius:10px;font-weight:700;font-size:13px;z-index:200;opacity:0;transition:opacity .3s;pointer-events:none}
+.saving-toast.show{opacity:1}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:8px;margin-top:12px}
+.prediction-header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+@media(max-width:800px){
+  .top3{grid-template-columns:1fr}
+  .container{padding:12px 12px 96px}
+  .prediction-row{grid-template-columns:1fr auto 18px auto 1fr}
+  .prediction-row .game-time{grid-column:1/-1;text-align:center}
+  .topbar h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<section id="gate" class="screen center">
+  <div class="login-card">
+    <div class="logo">🏆</div>
+    <h1 style="text-align:center;margin-top:8px">BOLÃO WC26 MANTAS</h1>
+    <p class="muted" style="text-align:center;margin:6px 0 0">Copa do Mundo 2026</p>
+    <label>Senha do bolão</label>
+    <input id="gate-pass" type="password" placeholder="Digite a senha">
+    <button id="gate-btn" class="btn primary">ENTRAR</button>
+    <p id="gate-error" class="error"></p>
+  </div>
+</section>
+
+<!-- LOGIN -->
+<section id="login" class="screen center hidden">
+  <div class="login-card wide">
+    <div class="logo">⚽</div>
+    <h1 style="text-align:center;margin-top:8px">Acesso ao bolão</h1>
+    <div class="tabs" style="margin-top:18px">
+      <button class="tab active" data-login-tab="participant">Participante</button>
+      <button class="tab" data-login-tab="admin">Admin</button>
+    </div>
+
+    <div id="participant-box">
+      <label>Seu nome</label>
+      <select id="participant-select">
+        <option value="">Selecione...</option>
+        <option value="amadeu">AMADEU</option>
+        <option value="baixinho">BAIXINHO</option>
+        <option value="balta">BALTA</option>
+        <option value="catarino">CATARINO</option>
+        <option value="caue-renan">CAUE RENAN</option>
+        <option value="covelli">COVELLI</option>
+        <option value="diego">DIEGO</option>
+        <option value="fioti">FIOTI</option>
+        <option value="larissa">LARISSA</option>
+        <option value="leo-meira">LÉO MEIRA</option>
+        <option value="luiz">LUIZ</option>
+        <option value="mendes">MENDES</option>
+        <option value="milton">MILTON</option>
+        <option value="nycolas">NYCOLAS</option>
+        <option value="teco">TECO</option>
+      </select>
+      <label>PIN</label>
+      <input id="participant-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4 a 8 números">
+      <label id="confirm-label">Confirmar PIN</label>
+      <input id="participant-confirm" type="password" inputmode="numeric" maxlength="8" placeholder="Repita o PIN">
+      <p id="participant-hint" class="muted small" style="margin-top:6px">Primeiro acesso: crie seu PIN.</p>
+      <button id="participant-btn" class="btn primary">ENTRAR</button>
+      <p id="participant-error" class="error"></p>
+    </div>
+
+    <div id="admin-box" class="hidden">
+      <label>Senha admin</label>
+      <input id="admin-pass" type="password" placeholder="Senha de administrador">
+      <button id="admin-btn" class="btn primary">ENTRAR COMO ADMIN</button>
+      <p id="admin-error" class="error"></p>
+    </div>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app" class="hidden">
+  <header class="topbar">
+    <div>
+      <h1 id="topbar-title">🏆 BOLÃO WC26 MANTAS</h1>
+      <p id="topbar-sub" class="muted small"></p>
+    </div>
+    <button id="logout-btn" class="btn ghost">Sair</button>
+  </header>
+
+  <!-- HOME -->
+  <section id="page-home" class="page active">
+    <div class="container">
+      <div id="home-top3" class="top3"></div>
+      <div id="home-me" class="card"></div>
+      <div class="card" style="text-align:center">
+        <h2>⏰ PRÓXIMO FECHAMENTO</h2>
+        <div id="home-round-label" class="muted small" style="margin:6px 0"></div>
+        <div id="home-countdown" class="count">--</div>
+        <div id="home-deadline" class="muted small"></div>
+      </div>
+      <div class="card">
+        <h2>🌎 ÚLTIMOS RESULTADOS</h2>
+        <div id="home-results"><p class="muted">Nenhum gabarito lançado ainda.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PALPITES -->
+  <section id="page-palpites" class="page">
+    <div class="container">
+      <div class="card prediction-header">
+        <div>
+          <h2>⚽ Meus Palpites</h2>
+          <div id="pred-status" class="status-badge warn" style="margin-top:8px">Carregando...</div>
+        </div>
+        <div class="countdown-card">
+          <div class="muted small">Próximo fechamento</div>
+          <div id="pred-countdown" class="countdown-time">--</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <select id="pred-round-select" style="max-width:220px">
+            <option value="group1">Rodada 1</option>
+            <option value="group2">Rodada 2</option>
+            <option value="group3">Rodada 3</option>
+            <option value="r32">16 avos</option>
+            <option value="r16">Oitavas</option>
+            <option value="qf">Quartas</option>
+            <option value="sf">Semifinais</option>
+            <option value="finals">Finais</option>
+          </select>
+          <span id="pred-game-count" class="muted small"></span>
+        </div>
+      </div>
+      <div id="pred-games-list"></div>
+      <div id="pred-save-bar" class="hidden" style="padding:0 0 8px">
+        <button id="pred-save-btn" class="btn primary">💾 SALVAR PALPITES</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TROPA -->
+  <section id="page-tropa" class="page">
+    <div class="container">
+      <div class="card">
+        <h2>👀 Palpites da Tropa</h2>
+        <p class="muted small">Visíveis após o fechamento da rodada.</p>
+        <select id="troop-round-select" style="max-width:220px;margin-top:12px">
+          <option value="group1">Rodada 1</option>
+          <option value="group2">Rodada 2</option>
+          <option value="group3">Rodada 3</option>
+          <option value="r32">16 avos</option>
+          <option value="r16">Oitavas</option>
+          <option value="qf">Quartas</option>
+          <option value="sf">Semifinais</option>
+          <option value="finals">Finais</option>
+        </select>
+      </div>
+      <div id="troop-content"></div>
+    </div>
+  </section>
+
+  <!-- RANKING -->
+  <section id="page-ranking" class="page">
+    <div class="container">
+      <div id="ranking-top3" class="top3"></div>
+      <div class="card">
+        <h2>Classificação completa</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Pos</th><th class="left">Participante</th><th>Pts</th><th>Cravadas</th><th>Acertos</th></tr></thead>
+            <tbody id="ranking-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ESPECIAIS -->
+  <section id="page-especiais" class="page">
+    <div class="container">
+      <div class="tabs">
+        <button class="tab active" data-special-tab="mine">Meus especiais</button>
+        <button class="tab" data-special-tab="all">Especiais da tropa</button>
+      </div>
+      <div id="special-mine-panel"></div>
+      <div id="special-all-panel" class="hidden"></div>
+    </div>
+  </section>
+
+  <!-- COPA -->
+  <section id="page-copa" class="page">
+    <div class="container">
+      <div class="card"><h2>🌎 Copa do Mundo 2026</h2><p class="muted">Resultados e tabela oficial.</p></div>
+      <div id="copa-games"></div>
+    </div>
+  </section>
+
+  <!-- ADMIN -->
+  <section id="page-admin" class="page hidden">
+    <div class="container">
+      <div class="card">
+        <h2>⚙️ Painel Admin</h2>
+        <div class="tabs" style="margin-top:14px">
+          <button class="tab active" data-admin-tab="results">Resultados</button>
+          <button class="tab" data-admin-tab="specials">Especiais</button>
+          <button class="tab" data-admin-tab="rounds">Rodadas</button>
+          <button class="tab" data-admin-tab="pins">PINs</button>
+        </div>
+
+        <!-- Resultados -->
+        <div id="admin-tab-results">
+          <p class="muted small">Lance os placares reais de cada rodada.</p>
+          <select id="admin-results-round" style="max-width:220px;margin-bottom:14px">
+            <option value="group1">Rodada 1</option>
+            <option value="group2">Rodada 2</option>
+            <option value="group3">Rodada 3</option>
+            <option value="r32">16 avos</option>
+            <option value="r16">Oitavas</option>
+            <option value="qf">Quartas</option>
+            <option value="sf">Semifinais</option>
+            <option value="finals">Finais</option>
+          </select>
+          <div id="admin-results-games"></div>
+          <button id="admin-save-results-btn" class="btn btn-green">✅ SALVAR RESULTADOS</button>
+        </div>
+
+        <!-- Especiais -->
+        <div id="admin-tab-specials" class="hidden">
+          <p class="muted small">Defina o gabarito dos palpites especiais.</p>
+          <div id="admin-specials-form"></div>
+          <button id="admin-save-specials-btn" class="btn btn-green">✅ SALVAR GABARITO ESPECIAIS</button>
+        </div>
+
+        <!-- Rodadas -->
+        <div id="admin-tab-rounds" class="hidden">
+          <p class="muted small">Configure o prazo de fechamento de cada rodada.</p>
+          <div id="admin-rounds-form"></div>
+          <button id="admin-save-rounds-btn" class="btn btn-green">✅ SALVAR DATAS</button>
+        </div>
+
+        <!-- PINs -->
+        <div id="admin-tab-pins" class="hidden">
+          <p class="muted small">Gerencie os PINs dos participantes.</p>
+          <div id="admin-pins-list"></div>
+          <button id="admin-reset-pin-btn" class="btn btn-red" style="margin-top:10px">🗑️ RESETAR PIN SELECIONADO</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="bottom-nav">
+    <button data-page="home" class="active"><span>🏠</span><span class="label">Início</span></button>
+    <button data-page="palpites"><span>⚽</span><span class="label">Palpites</span></button>
+    <button data-page="tropa"><span>👀</span><span class="label">Tropa</span></button>
+    <button data-page="ranking"><span>🏆</span><span class="label">Ranking</span></button>
+    <button data-page="especiais"><span>🌟</span><span class="label">Especiais</span></button>
+    <button data-page="copa"><span>🌎</span><span class="label">Copa</span></button>
+    <button id="admin-nav-btn" data-page="admin" class="hidden"><span>⚙️</span><span class="label">Admin</span></button>
+  </nav>
+</section>
+
+<div id="toast" class="saving-toast">✅ Salvo!</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ── SUPABASE ───────────────────────────────────────────────────────────────
+const SUPA_URL  = "https://uikaoismzcdoqmnlxlqn.supabase.co";
+const SUPA_KEY  = "sb_publishable_cTPQ-YJQeHtAilT95ori-g_mbE218gS";
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ── CONSTANTES ─────────────────────────────────────────────────────────────
+const GATE_PASS  = "mantas2026";
+const ADMIN_PASS = "admin2026";
+
+const PARTICIPANTS = [
+  {id:"amadeu",name:"AMADEU"},{id:"baixinho",name:"BAIXINHO"},{id:"balta",name:"BALTA"},
+  {id:"catarino",name:"CATARINO"},{id:"caue-renan",name:"CAUE RENAN"},{id:"covelli",name:"COVELLI"},
+  {id:"diego",name:"DIEGO"},{id:"fioti",name:"FIOTI"},{id:"larissa",name:"LARISSA"},
+  {id:"leo-meira",name:"LÉO MEIRA"},{id:"luiz",name:"LUIZ"},{id:"mendes",name:"MENDES"},
+  {id:"milton",name:"MILTON"},{id:"nycolas",name:"NYCOLAS"},{id:"teco",name:"TECO"}
+];
+
+const ROUND_META = {
+  group1:{label:"Rodada 1",  deadline:"2026-06-11T15:59:00"},
+  group2:{label:"Rodada 2",  deadline:"2026-06-19T15:59:00"},
+  group3:{label:"Rodada 3",  deadline:"2026-06-26T15:59:00"},
+  r32:   {label:"16 avos",   deadline:"2026-06-29T15:59:00"},
+  r16:   {label:"Oitavas",   deadline:"2026-07-04T15:59:00"},
+  qf:    {label:"Quartas",   deadline:"2026-07-10T15:59:00"},
+  sf:    {label:"Semifinais",deadline:"2026-07-14T15:59:00"},
+  finals:{label:"Finais",    deadline:"2026-07-18T15:59:00"},
+};
+
+const GAMES = {
+  group1:[
+    {id:"m001",home:"México",         hf:"mx",    away:"África do Sul",        af:"za",    time:"16:00",date:"11/06"},
+    {id:"m002",home:"Coreia do Sul",  hf:"kr",    away:"Tchéquia",             af:"cz",    time:"23:00",date:"11/06"},
+    {id:"m003",home:"Canadá",         hf:"ca",    away:"Bósnia e Herzegovina", af:"ba",    time:"16:00",date:"12/06"},
+    {id:"m004",home:"Estados Unidos", hf:"us",    away:"Paraguai",             af:"py",    time:"22:00",date:"12/06"},
+    {id:"m005",home:"Catar",          hf:"qa",    away:"Suíça",                af:"ch",    time:"16:00",date:"13/06"},
+    {id:"m006",home:"Brasil",         hf:"br",    away:"Marrocos",             af:"ma",    time:"19:00",date:"13/06"},
+    {id:"m007",home:"Haiti",          hf:"ht",    away:"Escócia",              af:"gb-sct",time:"22:00",date:"13/06"},
+    {id:"m008",home:"Austrália",      hf:"au",    away:"Turquia",              af:"tr",    time:"01:00",date:"14/06"},
+    {id:"m009",home:"Alemanha",       hf:"de",    away:"Curaçao",              af:"cw",    time:"14:00",date:"14/06"},
+    {id:"m010",home:"Holanda",        hf:"nl",    away:"Japão",                af:"jp",    time:"17:00",date:"14/06"},
+    {id:"m011",home:"Costa do Marfim",hf:"ci",    away:"Equador",              af:"ec",    time:"20:00",date:"14/06"},
+    {id:"m012",home:"Suécia",         hf:"se",    away:"Tunísia",              af:"tn",    time:"23:00",date:"14/06"},
+    {id:"m013",home:"Espanha",        hf:"es",    away:"Cabo Verde",           af:"cv",    time:"13:00",date:"15/06"},
+    {id:"m014",home:"Bélgica",        hf:"be",    away:"Egito",                af:"eg",    time:"16:00",date:"15/06"},
+    {id:"m015",home:"Arábia Saudita", hf:"sa",    away:"Uruguai",              af:"uy",    time:"19:00",date:"15/06"},
+    {id:"m016",home:"Irã",            hf:"ir",    away:"Nova Zelândia",        af:"nz",    time:"22:00",date:"15/06"},
+    {id:"m017",home:"França",         hf:"fr",    away:"Senegal",              af:"sn",    time:"16:00",date:"16/06"},
+    {id:"m018",home:"Iraque",         hf:"iq",    away:"Noruega",              af:"no",    time:"19:00",date:"16/06"},
+    {id:"m019",home:"Argentina",      hf:"ar",    away:"Argélia",              af:"dz",    time:"22:00",date:"16/06"},
+    {id:"m020",home:"Áustria",        hf:"at",    away:"Jordânia",             af:"jo",    time:"01:00",date:"17/06"},
+    {id:"m021",home:"Portugal",       hf:"pt",    away:"RD Congo",             af:"cd",    time:"14:00",date:"17/06"},
+    {id:"m022",home:"Inglaterra",     hf:"gb-eng",away:"Croácia",              af:"hr",    time:"17:00",date:"17/06"},
+    {id:"m023",home:"Gana",           hf:"gh",    away:"Panamá",               af:"pa",    time:"20:00",date:"17/06"},
+    {id:"m024",home:"Uzbequistão",    hf:"uz",    away:"Colômbia",             af:"co",    time:"23:00",date:"17/06"},
+  ],
+  group2:[],group3:[],r32:[],r16:[],qf:[],sf:[],finals:[]
+};
+
+const SPECIALS = [
+  {id:"champion",   label:"🏆 Campeão"},
+  {id:"topscorer",  label:"⚽ Artilheiro"},
+  {id:"bestplayer", label:"⭐ Melhor jogador"},
+  {id:"bestyoung",  label:"🌱 Melhor jogador jovem"},
+  {id:"bestdefense",label:"🛡️ Melhor defesa entre os semifinalistas"},
+  {id:"bestattack", label:"🔥 Melhor ataque da competição"},
+  {id:"brazilgoal", label:"🇧🇷 Primeiro gol do Brasil na Copa"},
+  {id:"zerogoal",   label:"🚫 Seleção eliminada sem marcar gols"},
+  {id:"penalties",  label:"🎯 Quantos jogos serão definidos nos pênaltis?"},
+];
+
+// ── ESTADO ─────────────────────────────────────────────────────────────────
+const ST = {
+  user: null,          // {id, name, isAdmin}
+  predictions: {},     // {participantId: {roundId: {gameId:{home,away}}}}
+  results: {},         // {gameId: {home, away}}
+  specials: {},        // {participantId: {specialId: value}}
+  specialResults: {},  // {specialId: value}
+  pins: {},            // {participantId: hashedPin}
+  deadlines: {},       // {roundId: isoString}
+  predRound: "group1",
+  troopRound: "group1",
+  adminResultsRound: "group1",
+};
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+const $  = id => document.getElementById(id);
+const show = id => $(id).classList.remove("hidden");
+const hide = id => $(id).classList.add("hidden");
+
+function flag(code){
+  return `<img class="flag-img" src="https://flagcdn.com/24x18/${code}.png" loading="lazy" referrerpolicy="no-referrer">`;
+}
+function team(name, fc){
+  return `<span class="team-inline">${flag(fc)}<span>${name}</span></span>`;
+}
+function scoreOpts(val=""){
+  let s=`<option value="">-</option>`;
+  for(let i=0;i<=10;i++) s+=`<option value="${i}"${String(val)===String(i)?" selected":""}>${i}</option>`;
+  return s;
+}
+
+async function sha256(str){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+function toast(msg="✅ Salvo!"){
+  const el=$("toast"); el.textContent=msg;
+  el.classList.add("show");
+  setTimeout(()=>el.classList.remove("show"),2200);
+}
+
+function deadline(rid){
+  return new Date(ST.deadlines[rid] || ROUND_META[rid].deadline);
+}
+
+function isClosed(rid){ return deadline(rid) < new Date(); }
+
+function countdownStr(dl){
+  const diff = new Date(dl) - new Date();
+  if(diff<=0) return "FECHADO";
+  const d=Math.floor(diff/86400000);
+  const h=Math.floor((diff%86400000)/3600000);
+  const m=Math.floor((diff%3600000)/60000);
+  const s=Math.floor((diff%60000)/1000);
+  return `${d}d ${h}h ${m}m ${s}s`;
+}
+
+function nextRound(){
+  const now = new Date();
+  for(const [rid,rm] of Object.entries(ROUND_META)){
+    if(GAMES[rid]?.length && deadline(rid) > now) return {rid,...rm};
+  }
+  return null;
+}
+
+function calcScore(predsByRound, results){
+  let pts=0,exact=0,correct=0;
+  for(const [rid,games] of Object.entries(GAMES)){
+    const roundPreds = (predsByRound[rid]||{});
+    games.forEach(g=>{
+      const r = results[g.id];
+      const p = roundPreds[g.id];
+      if(!r||r.home==null||r.away==null) return;
+      if(!p||p.home==null||p.away==null) return;
+      const pH=+p.home,pA=+p.away,rH=+r.home,rA=+r.away;
+      if(pH===rH && pA===rA){pts+=3;exact++;correct++;}
+      else if(Math.sign(pH-pA)===Math.sign(rH-rA)){pts+=1;correct++;}
+    });
+  }
+  return {pts,exact,correct};
+}
+
+function buildRanking(){
+  return PARTICIPANTS.map(p=>{
+    const sc = calcScore(ST.predictions[p.id]||{}, ST.results);
+    return {...p,...sc};
+  }).sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.correct-a.correct);
+}
+
+// ── SUPABASE DATA ──────────────────────────────────────────────────────────
+async function loadAll(){
+  const [predRes, resRes, specRes, specResRes, pinsRes, dlRes] = await Promise.all([
+    sb.from("predictions").select("*"),
+    sb.from("results").select("*"),
+    sb.from("specials").select("*"),
+    sb.from("config").select("*").eq("key","special_results").maybeSingle(),
+    sb.from("config").select("*").eq("key","pins").maybeSingle(),
+    sb.from("config").select("*").eq("key","deadlines").maybeSingle(),
+  ]);
+
+  ST.predictions={};
+  (predRes.data||[]).forEach(r=>{
+    if(!ST.predictions[r.participant_id]) ST.predictions[r.participant_id]={};
+    ST.predictions[r.participant_id][r.round_id] = r.preds;
+  });
+
+  ST.results={};
+  (resRes.data||[]).forEach(r=>{ ST.results[r.game_id]={home:r.home,away:r.away}; });
+
+  ST.specials={};
+  (specRes.data||[]).forEach(r=>{ ST.specials[r.participant_id]=r.answers; });
+
+  ST.specialResults = specResRes.data?.value || {};
+  ST.pins           = pinsRes.data?.value   || {};
+  ST.deadlines      = dlRes.data?.value     || {};
+}
+
+async function upsertPredictions(pid, rid, preds){
+  await sb.from("predictions").upsert({participant_id:pid,round_id:rid,preds},{onConflict:"participant_id,round_id"});
+}
+
+async function upsertResults(resultsObj){
+  const rows = Object.entries(resultsObj).map(([game_id,v])=>({game_id,home:v.home,away:v.away}));
+  if(rows.length) await sb.from("results").upsert(rows,{onConflict:"game_id"});
+}
+
+async function upsertSpecials(pid, answers){
+  await sb.from("specials").upsert({participant_id:pid,answers},{onConflict:"participant_id"});
+}
+
+async function upsertConfig(key, value){
+  await sb.from("config").upsert({key,value},{onConflict:"key"});
+}
+
+// ── NAVEGAÇÃO ──────────────────────────────────────────────────────────────
+function showScreen(id){
+  ["gate","login","app"].forEach(s=>$(s).classList.add("hidden"));
+  show(id);
+}
+
+function showPage(pid){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  $("page-"+pid).classList.add("active");
+  document.querySelectorAll(".bottom-nav button[data-page]").forEach(b=>{
+    b.classList.toggle("active", b.dataset.page===pid);
+  });
+  renderPage(pid);
+}
+
+function renderPage(pid){
+  if(pid==="home")     renderHome();
+  if(pid==="palpites") renderPalpites();
+  if(pid==="tropa")    renderTropa();
+  if(pid==="ranking")  renderRanking();
+  if(pid==="especiais")renderEspeciais();
+  if(pid==="copa")     renderCopa();
+  if(pid==="admin")    renderAdmin();
+}
+
+// ── HOME ───────────────────────────────────────────────────────────────────
+function renderHome(){
+  const rank = buildRanking();
+  const medals=["🥇","🥈","🥉"],cls=["gold","silver","bronze"];
+  $("home-top3").innerHTML = rank.slice(0,3).map((p,i)=>`
+    <div class="card podium ${cls[i]}">
+      <h2>${medals[i]} ${p.name}</h2>
+      <div class="big">${p.pts}</div>
+      <div class="muted small">🎯 ${p.exact} cravadas</div>
+    </div>`).join("");
+
+  const u=ST.user;
+  if(u&&!u.isAdmin){
+    const me=rank.find(r=>r.id===u.id), pos=rank.findIndex(r=>r.id===u.id)+1;
+    $("home-me").innerHTML=`
+      <h3>Sua posição: <b>${pos}º lugar</b></h3>
+      <div class="stats-grid">
+        <div><div class="big" style="color:var(--gold)">${me.pts}</div><div class="muted small">pontos</div></div>
+        <div><div class="big" style="color:#86efac">${me.exact}</div><div class="muted small">cravadas</div></div>
+        <div><div class="big" style="color:#bfdbfe">${me.correct}</div><div class="muted small">acertos</div></div>
+      </div>`;
+  } else {
+    $("home-me").innerHTML=`<p class="muted">Visão administrativa.</p>`;
+  }
+
+  const nr=nextRound();
+  if(nr){
+    $("home-round-label").textContent=nr.label;
+    $("home-deadline").textContent=deadline(nr.rid).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+  }
+
+  let resHtml="";
+  for(const [rid,games] of Object.entries(GAMES)){
+    games.forEach(g=>{
+      const r=ST.results[g.id];
+      if(r&&r.home!=null&&r.away!=null){
+        resHtml+=`<div class="result">${team(g.home,g.hf)} <b>${r.home}–${r.away}</b> ${team(g.away,g.af)}<div class="muted small">${g.date}, ${g.time}</div></div>`;
+      }
+    });
+  }
+  $("home-results").innerHTML=resHtml||`<p class="muted">Nenhum gabarito lançado ainda.</p>`;
+}
+
+// ── PALPITES ───────────────────────────────────────────────────────────────
+function renderPalpites(){
+  const rid=ST.predRound, closed=isClosed(rid), isAdmin=ST.user?.isAdmin;
+  const badge=$("pred-status");
+  if(isAdmin){badge.className="status-badge warn";badge.textContent="👁 Modo admin";}
+  else if(closed){badge.className="status-badge lock";badge.textContent="🔒 Rodada fechada";}
+  else{badge.className="status-badge ok";badge.textContent="✅ Aberto para palpites";}
+
+  const games=GAMES[rid]||[];
+  $("pred-game-count").textContent=`${games.length} jogos`;
+
+  if(!games.length){
+    $("pred-games-list").innerHTML=`<div class="card"><p class="muted">Jogos ainda não disponíveis.</p></div>`;
+    hide("pred-save-bar");return;
+  }
+
+  const myPreds=isAdmin?{}:((ST.predictions[ST.user?.id]||{})[rid]||{});
+  const dis=closed||isAdmin?"disabled":"";
+
+  const byDate={};
+  games.forEach(g=>{(byDate[g.date]=byDate[g.date]||[]).push(g);});
+
+  let html="";
+  for(const [date,gs] of Object.entries(byDate)){
+    html+=`<div class="day">${date}/2026</div>`;
+    gs.forEach(g=>{
+      const p=myPreds[g.id]||{};
+      html+=`<div class="prediction-row">
+        <div class="team-r">${team(g.home,g.hf)}</div>
+        <select class="score-select" data-gid="${g.id}" data-side="home" ${dis}>${scoreOpts(p.home)}</select>
+        <div style="text-align:center;font-weight:700">X</div>
+        <select class="score-select" data-gid="${g.id}" data-side="away" ${dis}>${scoreOpts(p.away)}</select>
+        <div class="team-l">${team(g.away,g.af)}</div>
+        <div class="game-time">${g.time}</div>
+      </div>`;
+    });
+  }
+  $("pred-games-list").innerHTML=html;
+  if(!closed&&!isAdmin) show("pred-save-bar"); else hide("pred-save-bar");
+}
+
+// ── TROPA ──────────────────────────────────────────────────────────────────
+function renderTropa(){
+  const rid=ST.troopRound;
+  if(!isClosed(rid)&&!ST.user?.isAdmin){
+    $("troop-content").innerHTML=`<div class="card"><p class="muted">Palpites serão liberados após o fechamento da rodada.</p></div>`;
+    return;
+  }
+  const games=GAMES[rid]||[];
+  if(!games.length){
+    $("troop-content").innerHTML=`<div class="card"><p class="muted">Nenhum jogo nesta fase.</p></div>`;
+    return;
+  }
+  let head=`<tr><th class="left" style="min-width:170px">Jogo</th>`;
+  PARTICIPANTS.forEach(p=>head+=`<th>${p.name}</th>`);
+  head+=`<th>Placar</th></tr>`;
+
+  let rows="";
+  games.forEach(g=>{
+    const r=ST.results[g.id];
+    rows+=`<tr><td class="left">${team(g.home,g.hf)} x ${team(g.away,g.af)}<div class="muted small">${g.time}</div></td>`;
+    PARTICIPANTS.forEach(p=>{
+      const pr=((ST.predictions[p.id]||{})[rid]||{})[g.id]||{};
+      const isMe=ST.user?.id===p.id;
+      let cell="-";
+      if(pr.home!=null&&pr.away!=null){
+        let cls="cell";
+        if(r&&r.home!=null){
+          const pH=+pr.home,pA=+pr.away,rH=+r.home,rA=+r.away;
+          if(pH===rH&&pA===rA) cls+=" cravou";
+          else if(Math.sign(pH-pA)===Math.sign(rH-rA)) cls+=" acertou";
+          else cls+=" errou";
+        }
+        cell=`<span class="${cls}">${pr.home}–${pr.away}</span>`;
+      }
+      rows+=`<td${isMe?' class="me-row"':''}>${cell}</td>`;
+    });
+    const rc=r&&r.home!=null?`<b>${r.home}–${r.away}</b>`:`<span class="muted">-</span>`;
+    rows+=`<td>${rc}</td></tr>`;
+  });
+  $("troop-content").innerHTML=`<div class="table-wrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+}
+
+// ── RANKING ────────────────────────────────────────────────────────────────
+function renderRanking(){
+  const rank=buildRanking();
+  const medals=["🥇","🥈","🥉"],cls=["gold","silver","bronze"];
+  $("ranking-top3").innerHTML=rank.slice(0,3).map((p,i)=>`
+    <div class="card podium ${cls[i]}">
+      <h2>${medals[i]} ${p.name}</h2>
+      <div class="big">${p.pts}</div>
+      <div class="muted small">🎯 ${p.exact} cravadas</div>
+    </div>`).join("");
+  $("ranking-tbody").innerHTML=rank.map((p,i)=>`
+    <tr class="${ST.user?.id===p.id?"me-row":""}">
+      <td>${i+1}</td><td class="left">${p.name}</td>
+      <td><b>${p.pts}</b></td><td>${p.exact}</td><td>${p.correct}</td>
+    </tr>`).join("");
+}
+
+// ── ESPECIAIS ──────────────────────────────────────────────────────────────
+function renderEspeciais(){
+  renderSpecialMine();
+  renderSpecialAll();
+}
+
+function renderSpecialMine(){
+  const u=ST.user;
+  if(!u||u.isAdmin){
+    $("special-mine-panel").innerHTML=`<div class="card"><p class="muted">Entre como participante para preencher seus especiais.</p></div>`;
+    return;
+  }
+  const my=ST.specials[u.id]||{};
+  let html=`<div class="card"><h2>🌟 Palpites Especiais</h2>`;
+  SPECIALS.forEach(s=>{
+    html+=`<div style="margin-top:14px"><label>${s.label}</label>
+      <input type="text" data-spec="${s.id}" value="${(my[s.id]||'').replace(/"/g,'&quot;')}" placeholder="Sua resposta">
+    </div>`;
+  });
+  html+=`<button id="save-specials-btn" class="btn primary" style="margin-top:18px">💾 SALVAR ESPECIAIS</button></div>`;
+  $("special-mine-panel").innerHTML=html;
+  $("save-specials-btn").onclick=async()=>{
+    const ans={};
+    document.querySelectorAll("[data-spec]").forEach(el=>{ans[el.dataset.spec]=el.value.trim();});
+    ST.specials[u.id]=ans;
+    await upsertSpecials(u.id,ans);
+    toast();
+  };
+}
+
+function renderSpecialAll(){
+  let head=`<tr><th class="left">Categoria</th>`;
+  PARTICIPANTS.forEach(p=>head+=`<th>${p.name}</th>`);
+  head+=`</tr>`;
+  let rows="";
+  SPECIALS.forEach(s=>{
+    rows+=`<tr><td class="left" style="min-width:220px">${s.label}</td>`;
+    PARTICIPANTS.forEach(p=>{
+      const v=(ST.specials[p.id]||{})[s.id]||"-";
+      const res=ST.specialResults[s.id];
+      const hit=res&&v!=="-"&&v.toLowerCase()===res.toLowerCase();
+      rows+=`<td${hit?' style="color:var(--greenText);font-weight:800"':''}>${v}</td>`;
+    });
+    rows+=`</tr>`;
+  });
+  $("special-all-panel").innerHTML=`<div class="table-wrap"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+}
+
+// ── COPA ───────────────────────────────────────────────────────────────────
+function renderCopa(){
+  let html="";
+  for(const [rid,games] of Object.entries(GAMES)){
+    if(!games.length) continue;
+    html+=`<div class="card"><h2>${ROUND_META[rid].label}</h2>`;
+    games.forEach(g=>{
+      const r=ST.results[g.id];
+      const sc=r&&r.home!=null?`<b style="margin:0 10px;font-size:18px">${r.home}–${r.away}</b>`:`<span class="muted" style="margin:0 10px">x</span>`;
+      html+=`<div class="result">${team(g.home,g.hf)}${sc}${team(g.away,g.af)}<div class="muted small">${g.date}/2026, ${g.time}</div></div>`;
+    });
+    html+=`</div>`;
+  }
+  $("copa-games").innerHTML=html;
+}
+
+// ── ADMIN ──────────────────────────────────────────────────────────────────
+function renderAdmin(){
+  renderAdminResults();
+  // especiais
+  let spHtml="";
+  SPECIALS.forEach(s=>{
+    spHtml+=`<div style="margin-top:12px"><label>${s.label}</label>
+      <input type="text" data-spec-res="${s.id}" value="${(ST.specialResults[s.id]||'').replace(/"/g,'&quot;')}" placeholder="Gabarito">
+    </div>`;
+  });
+  $("admin-specials-form").innerHTML=spHtml;
+  // rodadas
+  let rdHtml="";
+  for(const [id,rm] of Object.entries(ROUND_META)){
+    const val=(ST.deadlines[id]||rm.deadline).slice(0,16);
+    rdHtml+=`<div style="margin-top:12px"><label>${rm.label}</label>
+      <input type="datetime-local" data-deadline="${id}" value="${val}">
+    </div>`;
+  }
+  $("admin-rounds-form").innerHTML=rdHtml;
+  // pins
+  let pinHtml=`<select id="admin-pin-sel" style="margin-bottom:10px"><option value="">Selecione...</option>`;
+  PARTICIPANTS.forEach(p=>{
+    pinHtml+=`<option value="${p.id}">${p.name} ${ST.pins[p.id]?"✅":"❌ sem PIN"}</option>`;
+  });
+  pinHtml+=`</select>`;
+  $("admin-pins-list").innerHTML=pinHtml;
+}
+
+function renderAdminResults(){
+  const rid=ST.adminResultsRound, games=GAMES[rid]||[];
+  let html="";
+  if(!games.length){html=`<p class="muted">Nenhum jogo nesta fase ainda.</p>`;}
+  else{
+    const byDate={};
+    games.forEach(g=>{(byDate[g.date]=byDate[g.date]||[]).push(g);});
+    for(const [date,gs] of Object.entries(byDate)){
+      html+=`<div class="day">${date}/2026</div>`;
+      gs.forEach(g=>{
+        const r=ST.results[g.id]||{};
+        html+=`<div class="prediction-row">
+          <div class="team-r">${team(g.home,g.hf)}</div>
+          <select class="score-select admin-score" data-gid="${g.id}" data-side="home">${scoreOpts(r.home)}</select>
+          <div style="text-align:center;font-weight:700">X</div>
+          <select class="score-select admin-score" data-gid="${g.id}" data-side="away">${scoreOpts(r.away)}</select>
+          <div class="team-l">${team(g.away,g.af)}</div>
+          <div class="game-time">${g.time}</div>
+        </div>`;
+      });
+    }
+  }
+  $("admin-results-games").innerHTML=html;
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+async function init(){
+  if(sessionStorage.getItem("gate")==="ok") showScreen("login");
+  else showScreen("gate");
+
+  setInterval(()=>{
+    const nr=nextRound();
+    if(!nr) return;
+    const c=countdownStr(deadline(nr.rid));
+    if($("home-countdown")) $("home-countdown").textContent=c;
+    if($("pred-countdown")) $("pred-countdown").textContent=c;
+  },1000);
+}
+
+// ── EVENTOS ────────────────────────────────────────────────────────────────
+
+// Gate
+$("gate-btn").onclick=()=>{
+  if($("gate-pass").value===GATE_PASS){sessionStorage.setItem("gate","ok");showScreen("login");}
+  else $("gate-error").textContent="Senha incorreta.";
+};
+$("gate-pass").onkeydown=e=>{ if(e.key==="Enter") $("gate-btn").click(); };
+
+// Login tabs
+document.querySelectorAll("[data-login-tab]").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll("[data-login-tab]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    if(btn.dataset.loginTab==="participant"){show("participant-box");hide("admin-box");}
+    else{hide("participant-box");show("admin-box");}
+  };
+});
+
+// Participante login
+$("participant-btn").onclick=async()=>{
+  const id=$("participant-select").value;
+  const pin=$("participant-pin").value;
+  const confirm=$("participant-confirm").value;
+  if(!id){$("participant-error").textContent="Selecione um participante.";return;}
+  if(pin.length<4){$("participant-error").textContent="PIN deve ter 4 a 8 dígitos.";return;}
+  const hashed=await sha256(pin);
+  const stored=ST.pins[id];
+  if(!stored){
+    if(pin!==confirm){$("participant-error").textContent="PINs não conferem.";return;}
+    ST.pins[id]=hashed;
+    await upsertConfig("pins",ST.pins);
+  } else {
+    if(hashed!==stored){$("participant-error").textContent="PIN incorreto.";return;}
+  }
+  const p=PARTICIPANTS.find(x=>x.id===id);
+  ST.user={id,name:p.name,isAdmin:false};
+  await loadAll();
+  loginSuccess();
+};
+
+// Admin login
+$("admin-btn").onclick=async()=>{
+  if($("admin-pass").value!==ADMIN_PASS){$("admin-error").textContent="Senha incorreta.";return;}
+  ST.user={id:"__admin__",name:"Admin",isAdmin:true};
+  await loadAll();
+  loginSuccess();
+};
+
+function loginSuccess(){
+  showScreen("app");
+  const u=ST.user;
+  $("topbar-title").textContent=u.isAdmin?"⚙️ BOLÃO WC26 — ADMIN":"🏆 "+u.name;
+  $("topbar-sub").textContent=u.isAdmin?"Painel administrativo":"BOLÃO WC26 MANTAS";
+  if(u.isAdmin){show("admin-nav-btn");show("page-admin");}
+  showPage("home");
+}
+
+$("logout-btn").onclick=()=>{ ST.user=null; showScreen("login"); };
+
+// Bottom nav
+document.querySelectorAll(".bottom-nav button[data-page]").forEach(btn=>{
+  btn.onclick=()=>showPage(btn.dataset.page);
+});
+
+// Prediction round
+$("pred-round-select").onchange=e=>{ST.predRound=e.target.value;renderPalpites();};
+$("troop-round-select").onchange=e=>{ST.troopRound=e.target.value;renderTropa();};
+
+// Save predictions
+$("pred-save-btn").onclick=async()=>{
+  const rid=ST.predRound, uid=ST.user.id;
+  const preds={};
+  document.querySelectorAll(".score-select[data-gid]").forEach(el=>{
+    const gid=el.dataset.gid, side=el.dataset.side;
+    if(!preds[gid]) preds[gid]={};
+    preds[gid][side]=el.value===""?null:el.value;
+  });
+  if(!ST.predictions[uid]) ST.predictions[uid]={};
+  ST.predictions[uid][rid]=preds;
+  await upsertPredictions(uid,rid,preds);
+  toast();
+};
+
+// Admin tabs
+document.querySelectorAll("[data-admin-tab]").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    ["results","specials","rounds","pins"].forEach(t=>{
+      $("admin-tab-"+t).classList.toggle("hidden",t!==btn.dataset.adminTab);
+    });
+  };
+});
+
+// Admin: results round
+$("admin-results-round").onchange=e=>{ST.adminResultsRound=e.target.value;renderAdminResults();};
+
+// Admin save results
+$("admin-save-results-btn").onclick=async()=>{
+  document.querySelectorAll(".admin-score").forEach(el=>{
+    const gid=el.dataset.gid,side=el.dataset.side;
+    if(!ST.results[gid]) ST.results[gid]={};
+    ST.results[gid][side]=el.value===""?null:el.value;
+  });
+  await upsertResults(ST.results);
+  toast();
+};
+
+// Admin save specials
+$("admin-save-specials-btn").onclick=async()=>{
+  const res={};
+  document.querySelectorAll("[data-spec-res]").forEach(el=>{ res[el.dataset.specRes]=el.value.trim(); });
+  ST.specialResults=res;
+  await upsertConfig("special_results",res);
+  toast();
+};
+
+// Admin save rounds
+$("admin-save-rounds-btn").onclick=async()=>{
+  document.querySelectorAll("[data-deadline]").forEach(el=>{
+    ST.deadlines[el.dataset.deadline]=el.value+":00";
+  });
+  await upsertConfig("deadlines",ST.deadlines);
+  toast();
+};
+
+// Admin reset pin
+$("admin-reset-pin-btn").onclick=async()=>{
+  const sel=document.getElementById("admin-pin-sel")?.value;
+  if(!sel){alert("Selecione um participante.");return;}
+  if(!confirm(`Resetar PIN de ${sel}?`)) return;
+  delete ST.pins[sel];
+  await upsertConfig("pins",ST.pins);
+  renderAdmin();
+  toast("🗑️ PIN resetado!");
+};
+
+// Especiais tabs
+document.querySelectorAll("[data-special-tab]").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll("[data-special-tab]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    if(btn.dataset.specialTab==="mine"){show("special-mine-panel");hide("special-all-panel");}
+    else{hide("special-mine-panel");show("special-all-panel");}
+    renderEspeciais();
+  };
+});
+
+init();
+</script>
+</body>
+</html>
