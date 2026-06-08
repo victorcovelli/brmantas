@@ -838,11 +838,19 @@ function renderJogos(){
     html+=`<div class="day">${fmtDate(date)}/2026</div>`;
     gs.forEach(g=>{
       const res=getResult(g.idEvent);
+      const finished=g.strStatus==="FT";
       const sc=res&&res.home!=null
-        ?`<b style="margin:0 10px;font-size:18px">${res.home}–${res.away}</b>`
-        :`<span class="muted" style="margin:0 10px">${fmtTime(g.strTime)}</span>`;
-      const status=g.strStatus==="FT"?`<span style="font-size:11px;color:var(--greenText)"> FT</span>`:"";
-      html+=`<div class="result">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}${sc}${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}${status}</div>`;
+        ?`<div style="text-align:center;font-weight:800;font-size:18px;white-space:nowrap">${res.home}<span style="color:var(--muted);font-weight:400;margin:0 2px">–</span>${res.away}</div>`
+        :`<div style="text-align:center;font-weight:700;color:var(--muted);white-space:nowrap">X</div>`;
+      const timeOrFT=finished
+        ?`<span style="font-size:11px;color:var(--greenText);font-weight:700">FT</span>`
+        :`<span style="font-size:12px;color:var(--muted)">${fmtTime(g.strTime)}</span>`;
+      html+=`<div class="prediction-row" style="grid-template-columns:1.3fr 80px 1.3fr 72px">
+        <div class="team-r">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}</div>
+        ${sc}
+        <div class="team-l">${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}</div>
+        <div class="game-time">${timeOrFT}</div>
+      </div>`;
     });
   }
   $("jogos-list").innerHTML=`<div class="card">${html}</div>`;
