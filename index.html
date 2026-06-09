@@ -487,9 +487,16 @@ async function fetchFirstGoal(eventId){
   }
 }
 
+function squadByTeam(teamId, teamName){
+  // tenta pelo id, depois pelo nome
+  if(ST.squads[teamId]) return ST.squads[teamId].players||[];
+  const entry=Object.values(ST.squads).find(v=>v.name===teamName);
+  return entry ? entry.players||[] : [];
+}
+
 function buildFirstGoalRow(eid, homeId, homeName, awayId, awayName, savedPlayer, dis){
-  const homePlayers = (ST.squads[homeId]||{}).players||[];
-  const awayPlayers = (ST.squads[awayId]||{}).players||[];
+  const homePlayers = squadByTeam(homeId, homeName);
+  const awayPlayers = squadByTeam(awayId, awayName);
   const hasSquads = homePlayers.length||awayPlayers.length;
 
   if(!hasSquads || dis){
@@ -1150,12 +1157,13 @@ document.addEventListener("change", e=>{
   const eid=sel.dataset.eid;
   const teamChoice=sel.value; // "home" | "away" | ""
   const homeId=sel.dataset.homeId, awayId=sel.dataset.awayId;
+  const homeSel=sel.closest(".first-goal-row")?.querySelector(".fg-player-sel");
   const players=teamChoice==="home"
-    ? (ST.squads[homeId]||{}).players||[]
+    ? squadByTeam(homeId, sel.options[1]?.text||"")
     : teamChoice==="away"
-    ? (ST.squads[awayId]||{}).players||[]
+    ? squadByTeam(awayId, sel.options[2]?.text||"")
     : [];
-  const playerSel=document.querySelector(`.fg-player-sel[data-eid="${eid}"]`);
+  const playerSel=homeSel||document.querySelector(`.fg-player-sel[data-eid="${eid}"]`);
   if(!playerSel) return;
   playerSel.innerHTML=`<option value="">Jogador...</option>`+
     players.map(p=>`<option value="${p.replace(/"/g,'&quot;')}">${p}</option>`).join("");
