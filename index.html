@@ -487,16 +487,46 @@ async function fetchFirstGoal(eventId){
   }
 }
 
-async function fetchSquad(teamId){
-  if(ST.squads[teamId]) return;
-  ST.squads[teamId]=[];
-  try{
-    const res=await fetch(`${TSDB}/lookup_all_players.php?id=${teamId}`);
-    const data=await res.json();
-    ST.squads[teamId]=(data.player||[])
-      .filter(p=>p.strPosition!=="Manager")
-      .map(p=>p.strPlayer);
-  } catch(e){ /* silencioso */ }
+function buildFirstGoalRow(eid, homeId, homeName, awayId, awayName, savedPlayer, dis){
+  const homePlayers = (ST.squads[homeId]||{}).players||[];
+  const awayPlayers = (ST.squads[awayId]||{}).players||[];
+  const hasSquads = homePlayers.length||awayPlayers.length;
+
+  if(!hasSquads || dis){
+    // sem elenco carregado ou rodada fechada: campo texto simples
+    return `<div class="first-goal-row">
+      <span style="color:var(--muted)">⚽ 1º gol:</span>
+      <input type="text" class="first-goal-input" data-eid="${eid}"
+        value="${(savedPlayer||'').replace(/"/g,'&quot;')}"
+        placeholder="Nome do jogador (+5 pts)" ${dis}>
+    </div>`;
+  }
+
+  const teamOpts=`<option value="">Time...</option>
+    <option value="home">${homeName}</option>
+    <option value="away">${awayName}</option>`;
+
+  // descobre time atual do jogador salvo
+  let savedTeam="";
+  if(savedPlayer){
+    if(homePlayers.includes(savedPlayer)) savedTeam="home";
+    else if(awayPlayers.includes(savedPlayer)) savedTeam="away";
+  }
+
+  const players = savedTeam==="home" ? homePlayers : savedTeam==="away" ? awayPlayers : [];
+  const playerOpts=`<option value="">Jogador...</option>`+
+    players.map(p=>`<option value="${p.replace(/"/g,'&quot;')}" ${p===savedPlayer?"selected":""}>${p}</option>`).join("");
+
+  return `<div class="first-goal-row" style="flex-wrap:wrap;gap:6px">
+    <span style="color:var(--muted)">⚽ 1º gol:</span>
+    <select class="fg-team-sel" data-eid="${eid}" data-home-id="${homeId}" data-away-id="${awayId}" style="max-width:160px">
+      ${teamOpts.replace(`value="${savedTeam}"`,`value="${savedTeam}" selected`)}
+    </select>
+    <select class="first-goal-input fg-player-sel" data-eid="${eid}" style="max-width:200px">
+      ${playerOpts}
+    </select>
+    <input type="hidden" class="first-goal-input fg-hidden" data-eid="${eid}" value="${(savedPlayer||'').replace(/"/g,'&quot;')}">
+  </div>`;
 }
 
 // ── PONTUAÇÃO ──────────────────────────────────────────────────────────────
@@ -576,12 +606,13 @@ async function fetchAllGames(){
 
 // ── SUPABASE ───────────────────────────────────────────────────────────────
 async function loadSupabase(){
-  const [predRes,resRes,pinsRes,dlRes,partRes]=await Promise.all([
+  const [predRes,resRes,pinsRes,dlRes,partRes,squadsRes]=await Promise.all([
     sb.from("predictions").select("*"),
     sb.from("results").select("*"),
     sb.from("config").select("*").eq("key","pins").maybeSingle(),
     sb.from("config").select("*").eq("key","deadlines").maybeSingle(),
     sb.from("config").select("*").eq("key","participants").maybeSingle(),
+    sb.from("config").select("*").eq("key","squads").maybeSingle(),
   ]);
   ST.predictions={};
   (predRes.data||[]).forEach(r=>{
@@ -593,6 +624,7 @@ async function loadSupabase(){
   ST.pins      = pinsRes.data?.value||{};
   ST.deadlines = dlRes.data?.value||{};
   if(partRes.data?.value?.length) ST.participants=partRes.data.value;
+  if(squadsRes.data?.value) ST.squads=squadsRes.data.value;
   populateParticipantSelect();
 }
 function populateParticipantSelect(){
@@ -701,16 +733,6 @@ function renderHome(){
 }
 
 // ── RENDER: PALPITES ───────────────────────────────────────────────────────
-function buildSquadDatalist(eid, homeId, awayId){
-  const players=[
-    ...(ST.squads[homeId]||[]),
-    ...(ST.squads[awayId]||[]),
-  ];
-  if(!players.length) return "";
-  const opts=players.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join("");
-  return `<datalist id="dl-${eid}">${opts}</datalist>`;
-}
-
 async function renderPalpites(){
   if(!ST.allRounds.length){$("pred-games-list").innerHTML=`<div class="card"><p class="muted loading">Carregando jogos da API...</p></div>`;return;}
   if(!ST.predRound) ST.predRound=ST.allRounds[0];
@@ -729,15 +751,6 @@ async function renderPalpites(){
     hide("pred-save-bar");return;
   }
 
-  // busca elencos em background e re-renderiza UMA vez quando chegarem
-  if(!closed){
-    const teamIds=[...new Set(games.flatMap(g=>[g.idHomeTeam,g.idAwayTeam].filter(Boolean)))];
-    const missing=teamIds.filter(id=>!ST.squads[id]);
-    if(missing.length){
-      Promise.all(missing.map(id=>fetchSquad(id))).then(()=>renderPalpites());
-      return; // renderiza agora sem datalist, volta quando tiver os dados
-    }
-  }
 
   const myPreds=isAdmin?{}:((ST.predictions[ST.user?.id]||{})[rNum]||{});
   const dis=closed||isAdmin?"disabled":"";
@@ -751,9 +764,7 @@ async function renderPalpites(){
       const p=myPreds[g.idEvent]||{};
       const realFG=getFirstGoal(g.idEvent);
       const fgHint = realFG ? `<span style="color:var(--greenText);font-size:12px">✅ ${realFG}</span>` : "";
-      const dl=buildSquadDatalist(g.idEvent, g.idHomeTeam, g.idAwayTeam);
-      const listAttr=dl?`list="dl-${g.idEvent}"`:"";
-      html+=`${dl}<div class="prediction-row">
+      html+=`<div class="prediction-row">
         <div class="team-r">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}</div>
         <select class="score-select" data-eid="${g.idEvent}" data-side="home" ${dis}>${scoreOpts(p.home)}</select>
         <div style="text-align:center;font-weight:700">X</div>
@@ -761,13 +772,8 @@ async function renderPalpites(){
         <div class="team-l">${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}</div>
         <div class="game-time">${fmtTime(g.strTime)}</div>
       </div>
-      <div class="first-goal-row">
-        <span style="color:var(--muted)">⚽ 1º gol:</span>
-        <input type="text" class="first-goal-input" data-eid="${g.idEvent}"
-          value="${(p.firstGoal||'').replace(/"/g,'&quot;')}"
-          placeholder="Nome do jogador (+5 pts)" ${dis} ${listAttr}>
-        ${fgHint}
-      </div>`;
+      ${buildFirstGoalRow(g.idEvent,g.idHomeTeam,g.strHomeTeam,g.idAwayTeam,g.strAwayTeam,p.firstGoal||null,dis)}
+      ${fgHint?`<div style="padding:2px 8px 6px">${fgHint}</div>`:""}`;
     });
   }
   $("pred-games-list").innerHTML=html;
@@ -1091,15 +1097,14 @@ $("participant-btn").onclick=async()=>{
   $("participant-error").textContent="";
   if(!id){$("participant-error").textContent="Selecione um participante.";return;}
   if(pin.length<4){$("participant-error").textContent="PIN deve ter 4 a 8 dígitos.";return;}
-  // carrega pins do Supabase antes de validar (pode não ter sido carregado ainda)
-  if(!Object.keys(ST.pins).length){
-    const r=await sb.from("config").select("*").eq("key","pins").maybeSingle();
-    ST.pins=r.data?.value||{};
-  }
+  // sempre busca pins frescos do banco antes de validar
+  const freshPins=await sb.from("config").select("value").eq("key","pins").maybeSingle();
+  ST.pins=freshPins.data?.value||{};
   const hashed=await sha256(pin), stored=ST.pins[id];
   if(!stored){
     if(pin!==conf){$("participant-error").textContent="PINs não conferem.";return;}
-    ST.pins[id]=hashed; await upsertConfig("pins",ST.pins);
+    ST.pins[id]=hashed;
+    await upsertConfig("pins",ST.pins);
   } else {
     if(hashed!==stored){$("participant-error").textContent="PIN incorreto.";return;}
   }
@@ -1142,6 +1147,23 @@ $("pred-round-select").onchange=e=>{ ST.predRound=+e.target.value; renderPalpite
 $("troop-round-select").onchange=e=>{ ST.troopRound=+e.target.value; renderTropa(); };
 $("jogos-round-select").onchange=e=>{ ST.jogosRound=+e.target.value; renderJogos(); };
 
+$("pred-games-list").addEventListener("change", e=>{
+  if(!e.target.classList.contains("fg-team-sel")) return;
+  const sel=e.target;
+  const eid=sel.dataset.eid;
+  const teamChoice=sel.value; // "home" | "away" | ""
+  const homeId=sel.dataset.homeId, awayId=sel.dataset.awayId;
+  const players=teamChoice==="home"
+    ? (ST.squads[homeId]||{}).players||[]
+    : teamChoice==="away"
+    ? (ST.squads[awayId]||{}).players||[]
+    : [];
+  const playerSel=document.querySelector(`.fg-player-sel[data-eid="${eid}"]`);
+  if(!playerSel) return;
+  playerSel.innerHTML=`<option value="">Jogador...</option>`+
+    players.map(p=>`<option value="${p.replace(/"/g,'&quot;')}">${p}</option>`).join("");
+});
+
 $("pred-save-btn").onclick=async()=>{
   const rNum=ST.predRound, uid=ST.user.id;
   const preds={};
@@ -1150,10 +1172,17 @@ $("pred-save-btn").onclick=async()=>{
     if(!preds[eid]) preds[eid]={};
     preds[eid][side]=el.value===""?null:el.value;
   });
-  document.querySelectorAll(".first-goal-input[data-eid]").forEach(el=>{
-    const eid=el.dataset.eid;
+  // coleta 1º gol: para selects usa .fg-player-sel; para texto usa input[type=text]
+  const fgMap={};
+  document.querySelectorAll(".fg-player-sel[data-eid]").forEach(el=>{
+    fgMap[el.dataset.eid]=el.value||null;
+  });
+  document.querySelectorAll(".first-goal-input[type=text][data-eid]").forEach(el=>{
+    if(!(el.dataset.eid in fgMap)) fgMap[el.dataset.eid]=el.value.trim()||null;
+  });
+  Object.entries(fgMap).forEach(([eid,val])=>{
     if(!preds[eid]) preds[eid]={};
-    preds[eid].firstGoal=el.value.trim()||null;
+    preds[eid].firstGoal=val;
   });
   if(!ST.predictions[uid]) ST.predictions[uid]={};
   ST.predictions[uid][rNum]=preds;
