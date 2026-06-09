@@ -1116,6 +1116,12 @@ function renderAdminResults(){
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 async function init(){
+  // desregistra SW antigo que pode estar servindo cache
+  if("serviceWorker" in navigator){
+    const regs=await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r=>r.unregister()));
+    if(regs.length) { window.location.reload(); return; }
+  }
   populateParticipantSelect();
   const savedUser=sessionStorage.getItem("user");
   if(savedUser){
