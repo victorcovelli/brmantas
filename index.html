@@ -490,11 +490,13 @@ async function fetchFirstGoal(eventId){
 }
 
 function squadByTeam(teamId, teamName){
-  // normaliza id para string e tenta pelo id, depois pelo nome
-  const id=String(teamId);
-  if(ST.squads[id]) return ST.squads[id].players||[];
-  const entry=Object.values(ST.squads).find(v=>v.name===teamName);
-  return entry ? entry.players||[] : [];
+  const id=String(teamId||"");
+  if(ST.squads[id]?.players?.length) return ST.squads[id].players;
+  // fallback: busca pelo nome (normalizado, sem acento, case-insensitive)
+  const norm=s=>(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+  const n=norm(teamName);
+  const entry=Object.values(ST.squads).find(v=>norm(v.name)===n);
+  return entry?.players||[];
 }
 
 function buildFirstGoalRow(eid, homeId, homeName, awayId, awayName, savedPlayer, dis){
