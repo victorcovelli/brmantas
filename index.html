@@ -488,8 +488,9 @@ async function fetchFirstGoal(eventId){
 }
 
 function squadByTeam(teamId, teamName){
-  // tenta pelo id, depois pelo nome
-  if(ST.squads[teamId]) return ST.squads[teamId].players||[];
+  // normaliza id para string e tenta pelo id, depois pelo nome
+  const id=String(teamId);
+  if(ST.squads[id]) return ST.squads[id].players||[];
   const entry=Object.values(ST.squads).find(v=>v.name===teamName);
   return entry ? entry.players||[] : [];
 }
