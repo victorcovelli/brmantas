@@ -237,7 +237,7 @@ th{background:#111827;color:#cbd5e1}
           <h2>Classificação geral</h2>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Pos</th><th class="left">Participante</th><th>Pts</th><th>Cravadas</th><th>Acertos</th></tr></thead>
+              <thead><tr><th>Pos</th><th class="left">Participante</th><th>Pts</th><th>Cravadas</th></tr></thead>
               <tbody id="rank-tbody-geral"></tbody>
             </table>
           </div>
@@ -254,7 +254,7 @@ th{background:#111827;color:#cbd5e1}
           <h2 id="rank-mensal-title">Classificação mensal</h2>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Pos</th><th class="left">Participante</th><th>Pts</th><th>Cravadas</th><th>Acertos</th></tr></thead>
+              <thead><tr><th>Pos</th><th class="left">Participante</th><th>Pts</th><th>Cravadas</th></tr></thead>
               <tbody id="rank-tbody-mensal"></tbody>
             </table>
           </div>
@@ -402,6 +402,7 @@ const ST = {
   participants:      [...PARTICIPANTS_DEFAULT],
   squads:            {},   // {teamId: {name, players}}
   initialScores:     {},   // {pid: pts} — saldo histórico anterior ao sistema
+  initialExact:      {},   // {pid: n}   — cravadas históricas anteriores ao sistema
 };
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -577,8 +578,11 @@ function calcGameScore(pred, res, predFirstGoal, realFirstGoal){
 
 function calcScore(pid, monthFilter=null){
   let pts=0,exact=0,correct=0,goalPts=0;
-  // saldo inicial (pontos de rodadas anteriores ao sistema) — só no ranking geral
-  if(monthFilter===null) pts+=(ST.initialScores||{})[pid]||0;
+  // saldo inicial (pontos e cravadas de rodadas anteriores ao sistema) — só no ranking geral
+  if(monthFilter===null){
+    pts  += (ST.initialScores||{})[pid]||0;
+    exact+= (ST.initialExact ||{})[pid]||0;
+  }
   for(const rNum of ST.allRounds){
     if(monthFilter!==null && roundMonth(rNum)!==monthFilter) continue;
     const roundPreds=(ST.predictions[pid]||{})[rNum]||{};
@@ -653,7 +657,8 @@ async function loadSupabase(){
   ST.deadlines = dlRes.data?.value||{};
   if(partRes.data?.value?.length) ST.participants=partRes.data.value;
   if(squadsRes.data?.value) ST.squads=squadsRes.data.value;
-  if(initRes.data?.value)  ST.initialScores=initRes.data.value;
+  if(initRes.data?.value)  ST.initialScores=initRes.data.value.pts||initRes.data.value;
+  if(initRes.data?.value?.exact) ST.initialExact=initRes.data.value.exact;
   populateParticipantSelect();
 }
 function populateParticipantSelect(){
@@ -711,7 +716,7 @@ function leaderCard(p, borderClass, subtitle){
     <div class="muted small">${subtitle}</div>
     <div class="leader-name">🥇 ${p.name}</div>
     <div class="leader-pts">${p.pts}</div>
-    <div class="leader-sub">pts &nbsp;·&nbsp; 🎯 ${p.exact} cravadas &nbsp;·&nbsp; ✅ ${p.correct} acertos</div>
+    <div class="leader-sub">pts &nbsp;·&nbsp; 🎯 ${p.exact} cravadas</div>
   </div>`;
 }
 
@@ -881,7 +886,7 @@ function rankTableHTML(rankArr){
   return rankArr.map((p,i)=>`
     <tr class="${p.id===uid?"me-row":""}">
       <td>${i+1}</td><td class="left">${p.name}</td>
-      <td><b>${p.pts}</b></td><td>${p.exact}</td><td>${p.correct}</td>
+      <td><b>${p.pts}</b></td><td>${p.exact}</td>
     </tr>`).join("");
 }
 function renderRanking(){
