@@ -729,10 +729,14 @@ async function renderPalpites(){
     hide("pred-save-bar");return;
   }
 
-  // busca elencos em background (não bloqueia render)
+  // busca elencos em background e re-renderiza UMA vez quando chegarem
   if(!closed){
     const teamIds=[...new Set(games.flatMap(g=>[g.idHomeTeam,g.idAwayTeam].filter(Boolean)))];
-    Promise.all(teamIds.map(id=>fetchSquad(id))).then(()=>renderPalpites());
+    const missing=teamIds.filter(id=>!ST.squads[id]);
+    if(missing.length){
+      Promise.all(missing.map(id=>fetchSquad(id))).then(()=>renderPalpites());
+      return; // renderiza agora sem datalist, volta quando tiver os dados
+    }
   }
 
   const myPreds=isAdmin?{}:((ST.predictions[ST.user?.id]||{})[rNum]||{});
