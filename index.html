@@ -131,9 +131,11 @@ th{background:#111827;color:#cbd5e1}
       </select>
       <label>PIN</label>
       <input id="participant-pin" type="password" inputmode="numeric" maxlength="8" placeholder="4 a 8 números">
-      <label>Confirmar PIN</label>
-      <input id="participant-confirm" type="password" inputmode="numeric" maxlength="8" placeholder="Repita o PIN">
-      <p class="muted small" style="margin-top:6px">Primeiro acesso: crie seu PIN. Nos próximos, só o PIN.</p>
+      <div id="confirm-pin-box">
+        <label>Confirmar PIN</label>
+        <input id="participant-confirm" type="password" inputmode="numeric" maxlength="8" placeholder="Repita o PIN">
+        <p class="muted small" style="margin-top:6px">Primeiro acesso: crie seu PIN. Nos próximos, só o PIN.</p>
+      </div>
       <button id="participant-btn" class="btn primary">ENTRAR</button>
       <p id="participant-error" class="error"></p>
     </div>
@@ -1065,9 +1067,15 @@ async function init(){
   }
   if(sessionStorage.getItem("gate")==="ok") showScreen("login");
   else showScreen("gate");
-  // carrega participantes do Supabase em background para o select de login ficar correto
-  sb.from("config").select("value").eq("key","participants").maybeSingle().then(({data})=>{
-    if(data?.value?.length){ ST.participants=data.value; populateParticipantSelect(); }
+  // carrega participantes e pins do Supabase em background para a tela de login ficar correta
+  Promise.all([
+    sb.from("config").select("value").eq("key","participants").maybeSingle(),
+    sb.from("config").select("value").eq("key","pins").maybeSingle(),
+  ]).then(([partRes, pinsRes])=>{
+    if(partRes.data?.value?.length) ST.participants=partRes.data.value;
+    if(pinsRes.data?.value) ST.pins=pinsRes.data.value;
+    populateParticipantSelect();
+    updateConfirmVisibility();
   });
 
   setInterval(()=>{
@@ -1079,6 +1087,13 @@ async function init(){
 }
 
 // ── EVENTOS ────────────────────────────────────────────────────────────────
+
+function updateConfirmVisibility(){
+  const id=$("participant-select").value;
+  const hasPin=!!ST.pins[id];
+  $("confirm-pin-box").classList.toggle("hidden", hasPin);
+}
+$("participant-select").onchange=updateConfirmVisibility;
 
 $("gate-btn").onclick=()=>{
   if($("gate-pass").value===GATE_PASS){sessionStorage.setItem("gate","ok");showScreen("login");}
