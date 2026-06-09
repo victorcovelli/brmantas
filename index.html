@@ -284,6 +284,7 @@ th{background:#111827;color:#cbd5e1}
           <button class="tab active" data-admin-tab="results">Resultados</button>
           <button class="tab" data-admin-tab="palpites">Palpites</button>
           <button class="tab" data-admin-tab="rounds">Deadlines</button>
+          <button class="tab" data-admin-tab="elencos">Elencos</button>
           <button class="tab" data-admin-tab="participants">Participantes</button>
           <button class="tab" data-admin-tab="pins">PINs</button>
         </div>
@@ -306,6 +307,17 @@ th{background:#111827;color:#cbd5e1}
           <p class="muted small">Prazo de fechamento de cada rodada. A rodada pertence ao mês do seu <b>primeiro jogo</b>.</p>
           <div id="admin-rounds-form"></div>
           <button id="admin-save-rounds-btn" class="btn btn-green">✅ SALVAR DATAS</button>
+        </div>
+        <div id="admin-tab-elencos" class="hidden">
+          <p class="muted small">Gerencie o elenco de cada time.</p>
+          <select id="admin-elencos-team" style="max-width:260px;margin-bottom:14px">
+            <option value="">Selecione o time...</option>
+          </select>
+          <div id="admin-elencos-list"></div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+            <input id="admin-new-player" type="text" placeholder="Nome do jogador" style="flex:1;max-width:280px;margin-top:0">
+            <button id="admin-add-player-btn" class="btn btn-green" style="margin-top:0">➕ ADICIONAR</button>
+          </div>
         </div>
         <div id="admin-tab-participants" class="hidden">
           <p class="muted small">Adicione ou remova participantes do bolão.</p>
@@ -1030,6 +1042,51 @@ function renderAdminPalpites(){
   container.innerHTML=html;
 }
 
+function initAdminElencos(){
+  const sel=$("admin-elencos-team");
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">Selecione o time...</option>`+
+    Object.entries(ST.squads)
+      .sort((a,b)=>a[1].name.localeCompare(b[1].name))
+      .map(([id,v])=>`<option value="${id}">${v.name}</option>`).join("");
+  if(cur) sel.value=cur;
+  renderAdminElencos();
+}
+
+function renderAdminElencos(){
+  const tid=$("admin-elencos-team").value;
+  const container=$("admin-elencos-list");
+  if(!tid){container.innerHTML=`<p class="muted">Selecione um time.</p>`;return;}
+  const players=(ST.squads[tid]||{}).players||[];
+  if(!players.length){container.innerHTML=`<p class="muted">Nenhum jogador cadastrado.</p>`;return;}
+  container.innerHTML=players.map((p,i)=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)">
+      <span>${p}</span>
+      <button class="btn btn-red" style="padding:3px 10px;font-size:12px" onclick="removePlayer('${tid}',${i})">Remover</button>
+    </div>`).join("");
+}
+
+async function addPlayer(){
+  const tid=$("admin-elencos-team").value;
+  if(!tid){alert("Selecione um time.");return;}
+  const name=$("admin-new-player").value.trim();
+  if(!name) return;
+  if(!ST.squads[tid]) ST.squads[tid]={name:"",players:[]};
+  if(ST.squads[tid].players.includes(name)){alert("Jogador já existe.");return;}
+  ST.squads[tid].players.push(name);
+  await upsertConfig("squads",ST.squads);
+  $("admin-new-player").value="";
+  renderAdminElencos();
+}
+
+async function removePlayer(tid, idx){
+  const p=ST.squads[tid]?.players[idx];
+  if(!p||!confirm(`Remover ${p}?`)) return;
+  ST.squads[tid].players.splice(idx,1);
+  await upsertConfig("squads",ST.squads);
+  renderAdminElencos();
+}
+
 function renderAdminResults(){
   const rNum=ST.adminResultsRound, games=ST.games[rNum]||[];
   if(!games.length){$("admin-results-games").innerHTML=`<p class="muted">Nenhum jogo nesta rodada.</p>`;return;}
@@ -1232,10 +1289,11 @@ document.querySelectorAll("[data-admin-tab]").forEach(btn=>{
   btn.onclick=()=>{
     document.querySelectorAll("[data-admin-tab]").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
-    ["results","palpites","rounds","participants","pins"].forEach(t=>{
+    ["results","palpites","rounds","elencos","participants","pins"].forEach(t=>{
       $("admin-tab-"+t).classList.toggle("hidden",t!==btn.dataset.adminTab);
     });
     if(btn.dataset.adminTab==="palpites") initAdminPalpitesSelects();
+    if(btn.dataset.adminTab==="elencos") initAdminElencos();
   };
 });
 
@@ -1301,6 +1359,10 @@ $("admin-save-rounds-btn").onclick=async()=>{
 
 $("admin-add-participant-btn").onclick=()=>addParticipant();
 $("admin-new-participant").onkeydown=e=>{ if(e.key==="Enter") addParticipant(); };
+
+$("admin-elencos-team").onchange=()=>renderAdminElencos();
+$("admin-add-player-btn").onclick=()=>addPlayer();
+$("admin-new-player").onkeydown=e=>{ if(e.key==="Enter") addPlayer(); };
 
 $("admin-reset-pin-btn").onclick=async()=>{
   const sel=document.getElementById("admin-pin-sel")?.value;
