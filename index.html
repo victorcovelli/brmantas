@@ -1288,20 +1288,11 @@ $("admin-reset-pin-btn").onclick=async()=>{
 
 init();
 
+// desregistra qualquer service worker antigo
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js").then(reg=>{
-    reg.addEventListener("updatefound",()=>{
-      const w=reg.installing;
-      w.addEventListener("statechange",()=>{
-        if(w.state==="installed"&&navigator.serviceWorker.controller){
-          // nova versão disponível — recarrega silenciosamente
-          window.location.reload();
-        }
-      });
-    });
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(r=>r.unregister());
   });
-  // detecta quando SW assume controle (primeiro registro)
-  navigator.serviceWorker.addEventListener("controllerchange",()=>window.location.reload());
 }
 </script>
 </body>
