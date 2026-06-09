@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>BOLÃO BRASILEIRÃO 2026 — MANTAS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1248,6 +1251,22 @@ $("admin-reset-pin-btn").onclick=async()=>{
 };
 
 init();
+
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").then(reg=>{
+    reg.addEventListener("updatefound",()=>{
+      const w=reg.installing;
+      w.addEventListener("statechange",()=>{
+        if(w.state==="installed"&&navigator.serviceWorker.controller){
+          // nova versão disponível — recarrega silenciosamente
+          window.location.reload();
+        }
+      });
+    });
+  });
+  // detecta quando SW assume controle (primeiro registro)
+  navigator.serviceWorker.addEventListener("controllerchange",()=>window.location.reload());
+}
 </script>
 </body>
 </html>
