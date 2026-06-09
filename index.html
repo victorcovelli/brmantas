@@ -1011,13 +1011,8 @@ function renderAdminPalpites(){
         <div class="team-l">${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}</div>
         <div class="game-time">${fmtTime(g.strTime)}</div>
       </div>
-      <div class="first-goal-row">
-        <span style="color:var(--muted)">⚽ 1º gol:</span>
-        <input type="text" class="first-goal-input adm-pal-fg" data-eid="${g.idEvent}"
-          value="${(p.firstGoal||'').replace(/"/g,'&quot;')}"
-          placeholder="Nome do jogador (+5 pts)">
-        ${fgHint}
-      </div>`;
+      ${buildFirstGoalRow(g.idEvent,g.idHomeTeam,g.strHomeTeam,g.idAwayTeam,g.strAwayTeam,p.firstGoal||null,"")}
+      ${fgHint?`<div style="padding:2px 8px 6px">${fgHint}</div>`:""}`;
     });
   }
   container.innerHTML=html;
@@ -1149,7 +1144,7 @@ $("pred-round-select").onchange=e=>{ ST.predRound=+e.target.value; renderPalpite
 $("troop-round-select").onchange=e=>{ ST.troopRound=+e.target.value; renderTropa(); };
 $("jogos-round-select").onchange=e=>{ ST.jogosRound=+e.target.value; renderJogos(); };
 
-$("pred-games-list").addEventListener("change", e=>{
+document.addEventListener("change", e=>{
   if(!e.target.classList.contains("fg-team-sel")) return;
   const sel=e.target;
   const eid=sel.dataset.eid;
@@ -1241,10 +1236,16 @@ $("admin-save-palpites-btn").onclick=async()=>{
     if(!preds[eid]) preds[eid]={};
     preds[eid][side]=el.value===""?null:el.value;
   });
-  document.querySelectorAll(".adm-pal-fg[data-eid]").forEach(el=>{
-    const eid=el.dataset.eid;
+  const fgMap={};
+  document.querySelectorAll("#admin-palpites-games .fg-player-sel[data-eid]").forEach(el=>{
+    fgMap[el.dataset.eid]=el.value||null;
+  });
+  document.querySelectorAll("#admin-palpites-games .first-goal-input[type=text][data-eid]").forEach(el=>{
+    if(!(el.dataset.eid in fgMap)) fgMap[el.dataset.eid]=el.value.trim()||null;
+  });
+  Object.entries(fgMap).forEach(([eid,val])=>{
     if(!preds[eid]) preds[eid]={};
-    preds[eid].firstGoal=el.value.trim()||null;
+    preds[eid].firstGoal=val;
   });
   if(!ST.predictions[pid]) ST.predictions[pid]={};
   ST.predictions[pid][rNum]=preds;
