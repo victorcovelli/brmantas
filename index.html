@@ -1103,7 +1103,9 @@ $("participant-btn").onclick=async()=>{
   const hashed=await sha256(pin), stored=ST.pins[id];
   if(!stored){
     if(pin!==conf){$("participant-error").textContent="PINs não conferem.";return;}
-    ST.pins[id]=hashed;
+    // re-busca pins do banco no momento do save para não sobrescrever pins de outros usuários
+    const latest=await sb.from("config").select("value").eq("key","pins").maybeSingle();
+    ST.pins={...(latest.data?.value||{}), [id]:hashed};
     await upsertConfig("pins",ST.pins);
   } else {
     if(hashed!==stored){$("participant-error").textContent="PIN incorreto.";return;}
