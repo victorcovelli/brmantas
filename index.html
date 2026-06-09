@@ -400,7 +400,8 @@ const ST = {
   rankMonth:         new Date().getMonth()+1,
   apiLoaded:         false,
   participants:      [...PARTICIPANTS_DEFAULT],
-  squads:            {},   // {teamId: [playerName, ...]}
+  squads:            {},   // {teamId: {name, players}}
+  initialScores:     {},   // {pid: pts} — saldo histórico anterior ao sistema
 };
 
 // ── HELPERS ────────────────────────────────────────────────────────────────
@@ -576,6 +577,8 @@ function calcGameScore(pred, res, predFirstGoal, realFirstGoal){
 
 function calcScore(pid, monthFilter=null){
   let pts=0,exact=0,correct=0,goalPts=0;
+  // saldo inicial (pontos de rodadas anteriores ao sistema) — só no ranking geral
+  if(monthFilter===null) pts+=(ST.initialScores||{})[pid]||0;
   for(const rNum of ST.allRounds){
     if(monthFilter!==null && roundMonth(rNum)!==monthFilter) continue;
     const roundPreds=(ST.predictions[pid]||{})[rNum]||{};
@@ -630,13 +633,14 @@ async function fetchAllGames(){
 
 // ── SUPABASE ───────────────────────────────────────────────────────────────
 async function loadSupabase(){
-  const [predRes,resRes,pinsRes,dlRes,partRes,squadsRes]=await Promise.all([
+  const [predRes,resRes,pinsRes,dlRes,partRes,squadsRes,initRes]=await Promise.all([
     sb.from("predictions").select("*"),
     sb.from("results").select("*"),
     sb.from("config").select("*").eq("key","pins").maybeSingle(),
     sb.from("config").select("*").eq("key","deadlines").maybeSingle(),
     sb.from("config").select("*").eq("key","participants").maybeSingle(),
     sb.from("config").select("*").eq("key","squads").maybeSingle(),
+    sb.from("config").select("*").eq("key","initial_scores").maybeSingle(),
   ]);
   ST.predictions={};
   (predRes.data||[]).forEach(r=>{
@@ -649,6 +653,7 @@ async function loadSupabase(){
   ST.deadlines = dlRes.data?.value||{};
   if(partRes.data?.value?.length) ST.participants=partRes.data.value;
   if(squadsRes.data?.value) ST.squads=squadsRes.data.value;
+  if(initRes.data?.value)  ST.initialScores=initRes.data.value;
   populateParticipantSelect();
 }
 function populateParticipantSelect(){
