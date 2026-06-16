@@ -22,7 +22,7 @@ create table if not exists specials (
   updated_at     timestamptz default now()
 );
 
--- Tabela de configurações genéricas (pins, deadlines, special_results)
+-- Tabela de configurações genéricas (pins, deadlines, elencos, first_goal_overrides, initial_scores)
 create table if not exists config (
   key        text primary key,
   value      jsonb not null default '{}',
