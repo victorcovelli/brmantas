@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- build: 20260616-br-v1 -->
+<!-- build: 20260622-br-v2-historico-0x0 -->
 <title>BOLÃO BRASILEIRÃO 2026 — MANTAS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -407,15 +407,15 @@ const ADMIN_PASS = "admin2026";
 
 // ── PARTICIPANTES ──────────────────────────────────────────────────────────
 const PARTICIPANTS_DEFAULT = [
-  {id:"amadeu",    name:"AMADEU"},   {id:"baixinho",  name:"BAIXINHO"},
-  {id:"brenke",    name:"BRENKE"},   {id:"caue",      name:"CAUE"},
-  {id:"cone",      name:"CONE"},     {id:"covelli",   name:"COVELLI"},
-  {id:"jota",      name:"JOTA"},     {id:"kauan",     name:"KAUAN"},
-  {id:"neiva",     name:"NEIVA"},    {id:"lari-covs", name:"LARI COVS"},
-  {id:"leo-avila", name:"LÉO AVILA"},{id:"leo-meira", name:"LÉO MEIRA"},
-  {id:"lulu",      name:"LULU"},     {id:"mendes",    name:"MENDES"},
-  {id:"milton",    name:"MILTON"},   {id:"pedrinho",  name:"PEDRINHO"},
-  {id:"teco",      name:"TECO"},
+  {id:"amadeu",      name:"AMADEU"},      {id:"baixinho",    name:"BAIXINHO"},
+  {id:"brenke",      name:"BRENKE"},      {id:"caue-renan", name:"CAUE RENAN"},
+  {id:"diego",       name:"DIEGO"},       {id:"covelli",    name:"COVELLI"},
+  {id:"jota",        name:"JOTA"},        {id:"kauan",      name:"KAUAN"},
+  {id:"neiva",       name:"NEIVA"},       {id:"larissa",    name:"LARISSA"},
+  {id:"leo-avila",   name:"LÉO AVILA"},   {id:"leo-meira",  name:"LÉO MEIRA"},
+  {id:"luiz",        name:"LUIZ"},        {id:"mendes",     name:"MENDES"},
+  {id:"milton",      name:"MILTON"},      {id:"pedrinho",   name:"PEDRINHO"},
+  {id:"teco",        name:"TECO"},
 ];
 
 const MONTH_NAMES = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
@@ -457,6 +457,40 @@ function shieldImg(url, alt){
 }
 function teamHTML(name, shieldUrl){
   return `<span class="team-inline">${shieldImg(shieldUrl,name)}<span>${name}</span></span>`;
+}
+function basicKey(s){
+  return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+function teamKey(name){
+  const n=basicKey(name);
+  if((n.includes("atletico")||n.includes("atl-mg"))&&(n.includes("mineiro")||n.includes("mg")||!n.includes("athletico"))) return "atletico-mg";
+  if(n.includes("athletico")||n.includes("paranaense")) return "athletico";
+  if(n.includes("bragantino")) return "bragantino";
+  if(n.includes("coritiba")) return "coritiba";
+  if(n.includes("vitoria")) return "vitoria";
+  if(n.includes("remo")) return "remo";
+  if(n.includes("fluminense")) return "fluminense";
+  if(n.includes("gremio")) return "gremio";
+  if(n.includes("corinthians")) return "corinthians";
+  if(n.includes("bahia")) return "bahia";
+  if(n.includes("chapecoense")) return "chapecoense";
+  if(n.includes("santos")) return "santos";
+  if(n.includes("sao-paulo")||(n.includes("sao")&&n.includes("paulo"))) return "sao-paulo";
+  if(n.includes("flamengo")) return "flamengo";
+  if(n.includes("mirassol")) return "mirassol";
+  if(n.includes("vasco")) return "vasco";
+  if(n.includes("botafogo")) return "botafogo";
+  if(n.includes("cruzeiro")) return "cruzeiro";
+  if(n.includes("palmeiras")) return "palmeiras";
+  if(n.includes("internacional")) return "internacional";
+  return n;
+}
+function histGameKey(home, away){
+  return `hist:${teamKey(home)}:${teamKey(away)}`;
+}
+function getPredictionForGame(roundPreds, game){
+  if(!roundPreds||!game) return null;
+  return roundPreds[game.idEvent] || roundPreds[histGameKey(game.strHomeTeam,game.strAwayTeam)] || null;
 }
 function esc(v){
   return String(v??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -612,12 +646,17 @@ function calcGameScore(pred, res, predFirstGoal, realFirstGoal){
   if(!res||res.home==null||res.away==null) return {pts:0,exact:false,correct:false,goalPt:false};
   if(!pred||pred.home==null||pred.away==null) return {pts:0,exact:false,correct:false,goalPt:false};
   const pH=+pred.home,pA=+pred.away,rH=+res.home,rA=+res.away;
-  let pts=0,exact=false,correct=false;
-  if(pH===rH&&pA===rA){ pts=25; exact=true; correct=true; }
+  let pts=0,exact=false,correct=false,goalPt=false;
+  const exactNoGoals = pH===0 && pA===0 && rH===0 && rA===0;
+  if(pH===rH&&pA===rA){
+    pts=exactNoGoals ? 30 : 25;
+    exact=true;
+    correct=true;
+    if(exactNoGoals) goalPt=true; // 0x0 cravado também acerta a ausência do 1º gol
+  }
   else if(Math.sign(pH-pA)===Math.sign(rH-rA)){ pts=10; correct=true; }
-  // primeiro gol: +5 se acertou (case-insensitive, ignora acentos)
-  let goalPt=false;
-  if(predFirstGoal && realFirstGoal){
+  // primeiro gol: +5 se acertou (case-insensitive, ignora acentos). No 0x0 cravado, já está incluído nos 30.
+  if(!exactNoGoals && predFirstGoal && realFirstGoal){
     const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
     if(norm(predFirstGoal)===norm(realFirstGoal)){ pts+=5; goalPt=true; }
   }
@@ -636,7 +675,7 @@ function calcScore(pid, monthFilter=null){
     const roundPreds=(ST.predictions[pid]||{})[rNum]||{};
     (ST.games[rNum]||[]).forEach(g=>{
       const res=getResult(g.idEvent);
-      const pred=roundPreds[g.idEvent];
+      const pred=getPredictionForGame(roundPreds,g);
       const realFG=getFirstGoal(g.idEvent);
       const predFG=pred?.firstGoal||null;
       const sc=calcGameScore(pred,res,predFG,realFG);
@@ -846,7 +885,7 @@ async function renderPalpites(){
   for(const [date,gs] of Object.entries(byDate)){
     html+=`<div class="day">${fmtDate(date)}/2026</div>`;
     gs.forEach(g=>{
-      const p=myPreds[g.idEvent]||{};
+      const p=getPredictionForGame(myPreds,g)||{};
       const realFG=getFirstGoal(g.idEvent);
       const fgHint = realFG ? `<span style="color:var(--greenText);font-size:12px">✅ ${realFG}</span>` : "";
       html+=`<div class="prediction-row">
@@ -898,7 +937,7 @@ async function renderTropa(){
   const rows=ST.participants.map(p=>{
     const roundPreds=((ST.predictions[p.id]||{})[rNum])||{};
     const cells=games.map(g=>{
-      const pr=roundPreds[g.idEvent]||{};
+      const pr=getPredictionForGame(roundPreds,g)||{};
       const res=getResult(g.idEvent);
       const realFG=getFirstGoal(g.idEvent);
       const isMe=ST.user?.id===p.id;
@@ -1119,7 +1158,7 @@ function renderAdminPalpites(){
   for(const [date,gs] of Object.entries(byDate)){
     html+=`<div class="day">${fmtDate(date)}/2026</div>`;
     gs.forEach(g=>{
-      const p=preds[g.idEvent]||{};
+      const p=getPredictionForGame(preds,g)||{};
       const realFG=getFirstGoal(g.idEvent);
       const fgHint=realFG?`<span style="color:var(--greenText);font-size:12px">✅ ${realFG}</span>`:"";
       html+=`<div class="prediction-row">
