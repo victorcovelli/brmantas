@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<!-- build: 20260616-br-v1 -->
+<!-- build: 20260622-br-v2-historico-0x0 -->
 <title>BOLÃO BRASILEIRÃO 2026 — MANTAS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -117,6 +117,17 @@ th{background:#111827;color:#cbd5e1}
 .section-title{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:20px 0 8px}
 .shield{width:26px;height:26px;object-fit:contain;vertical-align:-5px;margin:0 5px}
 .shield-err{display:none}
+.shield-fallback{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:26px;height:26px;border-radius:50%;font-size:9px;font-weight:900;
+  color:#fff;background:#334155;border:1px solid rgba(255,255,255,.35);
+  vertical-align:-5px;margin:0 5px;letter-spacing:-.5px;
+}
+.troop-match .shield-fallback{width:18px;height:18px;font-size:7px;margin:0}
+.class-table .team-cell .shield-fallback{width:24px;height:24px;margin:0;flex:0 0 auto}
+@media(max-width:640px){.troop-match .shield-fallback{width:15px;height:15px;font-size:6px}}
+.team-flamengo{background:#991b1b}.team-palmeiras{background:#166534}.team-corinthians{background:#111827}.team-santos{background:#f8fafc;color:#111827}.team-sao-paulo{background:#ef4444}.team-vasco{background:#111827}.team-botafogo{background:#111827}.team-fluminense{background:#047857}.team-gremio{background:#2563eb}.team-internacional{background:#dc2626}.team-cruzeiro{background:#2563eb}.team-atletico-mg{background:#27272a}.team-athletico{background:#b91c1c}.team-bahia{background:#2563eb}.team-bragantino{background:#f8fafc;color:#111827}.team-coritiba{background:#047857}.team-vitoria{background:#b91c1c}.team-chapecoense{background:#16a34a}.team-mirassol{background:#eab308;color:#111827}.team-remo{background:#0f172a}.team-default{background:#334155}
+
 .team-inline{display:inline-flex;align-items:center;gap:3px;font-weight:700}
 .loading{color:var(--muted);font-size:13px;padding:12px 0}
 @media(max-width:700px){
@@ -296,7 +307,7 @@ th{background:#111827;color:#cbd5e1}
     <div class="container">
       <div class="card">
         <h2>📋 Brasileirão 2026</h2>
-        <p class="muted small">Jogos e resultados via TheSportsDB.</p>
+        <p class="muted small">Jogos e resultados controlados manualmente pelo bolão.</p>
         <select id="jogos-round-select" style="max-width:240px;margin-top:12px"></select>
       </div>
       <div id="jogos-list"></div>
@@ -308,7 +319,7 @@ th{background:#111827;color:#cbd5e1}
     <div class="container">
       <div class="card">
         <h2>📊 Classificação</h2>
-        <p class="muted small">Tabela calculada em tempo real com os resultados da API e os gabaritos salvos pelo admin.</p>
+        <p class="muted small">Tabela calculada com os resultados/gabaritos salvos pelo admin.</p>
       </div>
       <div id="classificacao-content"></div>
     </div>
@@ -328,7 +339,7 @@ th{background:#111827;color:#cbd5e1}
           <button class="tab" data-admin-tab="pins">PINs</button>
         </div>
         <div id="admin-tab-results">
-          <p class="muted small">Confirme os placares oficiais de cada rodada (puxados da API, mas você pode corrigir).</p>
+          <p class="muted small">Lance manualmente os placares oficiais e o 1º gol de cada partida.</p>
           <select id="admin-results-round" style="max-width:240px;margin-bottom:14px"></select>
           <div id="admin-results-games"></div>
           <button id="admin-save-results-btn" class="btn btn-green">✅ SALVAR RESULTADOS</button>
@@ -395,14 +406,11 @@ const SUPA_URL = "https://mxlyrojifqzmynoojpcx.supabase.co";
 const SUPA_KEY = "sb_publishable_zWcM0csSn8W2s2AspPEiMg_57V-pmIz";
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-// ── THESPORTSDB ────────────────────────────────────────────────────────────
-const TSDB      = "https://www.thesportsdb.com/api/v1/json/123";
-const LEAGUE_ID = "4351"; // Brazilian Serie A
+// ── TABELA MANUAL DO BOLÃO ─────────────────────────────────────────────────
+// API desativada: jogos, resultados, ranking e classificação usam apenas esta tabela + Supabase.
 const SEASON    = "2026";
-const TOTAL_ROUNDS = 38;
-
-// ── HISTÓRICO IMPORTADO (rodadas 1 a 18) ─────────────────────────────────
-const HISTORICAL_GAMES = {"1":[{"idEvent":"hist:atletico-mg:palmeiras","strHomeTeam":"Atlético-MG","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:athletico","strHomeTeam":"Internacional","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:coritiba:bragantino","strHomeTeam":"Coritiba","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vitoria:remo","strHomeTeam":"Vitória","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:gremio","strHomeTeam":"Fluminense","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:bahia","strHomeTeam":"Corinthians","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:santos","strHomeTeam":"Chapecoense","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:sao-paulo:flamengo","strHomeTeam":"São Paulo","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:vasco","strHomeTeam":"Mirassol","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:botafogo:cruzeiro","strHomeTeam":"Botafogo","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Botafogo","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"2":[{"idEvent":"hist:flamengo:internacional","strHomeTeam":"Flamengo","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bragantino:atletico-mg","strHomeTeam":"Bragantino","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:sao-paulo","strHomeTeam":"Santos","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:mirassol","strHomeTeam":"Remo","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:vitoria","strHomeTeam":"Palmeiras","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:botafogo","strHomeTeam":"Grêmio","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:chapecoense","strHomeTeam":"Vasco","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:fluminense","strHomeTeam":"Bahia","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:coritiba","strHomeTeam":"Cruzeiro","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:corinthians","strHomeTeam":"Athletico","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"3":[{"idEvent":"hist:vitoria:flamengo","strHomeTeam":"Vitória","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:cruzeiro","strHomeTeam":"Mirassol","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:coritiba","strHomeTeam":"Chapecoense","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:atletico-mg:remo","strHomeTeam":"Atlético-MG","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:bahia","strHomeTeam":"Vasco","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:sao-paulo:gremio","strHomeTeam":"São Paulo","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:santos","strHomeTeam":"Athletico","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:botafogo","strHomeTeam":"Fluminense","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:bragantino","strHomeTeam":"Corinthians","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:palmeiras","strHomeTeam":"Internacional","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"4":[{"idEvent":"hist:bragantino:athletico","strHomeTeam":"Bragantino","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:internacional","strHomeTeam":"Remo","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:coritiba:sao-paulo","strHomeTeam":"Coritiba","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:corinthians","strHomeTeam":"Cruzeiro","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:fluminense","strHomeTeam":"Palmeiras","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:atletico-mg","strHomeTeam":"Grêmio","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:vasco","strHomeTeam":"Santos","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"5":[{"idEvent":"hist:mirassol:santos","strHomeTeam":"Mirassol","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:atletico-mg:internacional","strHomeTeam":"Atlético-MG","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:vitoria","strHomeTeam":"Bahia","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:flamengo:cruzeiro","strHomeTeam":"Flamengo","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:coritiba","strHomeTeam":"Corinthians","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:fluminense","strHomeTeam":"Remo","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:palmeiras","strHomeTeam":"Vasco","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:sao-paulo:chapecoense","strHomeTeam":"São Paulo","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:bragantino","strHomeTeam":"Grêmio","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:botafogo","strHomeTeam":"Athletico","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"6":[{"idEvent":"hist:vitoria:atletico-mg","strHomeTeam":"Vitória","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:botafogo:flamengo","strHomeTeam":"Botafogo","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Botafogo","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:athletico","strHomeTeam":"Fluminense","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:corinthians","strHomeTeam":"Santos","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:bahia","strHomeTeam":"Internacional","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:mirassol","strHomeTeam":"Palmeiras","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:coritiba:remo","strHomeTeam":"Coritiba","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bragantino:sao-paulo","strHomeTeam":"Bragantino","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:vasco","strHomeTeam":"Cruzeiro","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:gremio","strHomeTeam":"Chapecoense","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"7":[{"idEvent":"hist:palmeiras:botafogo","strHomeTeam":"Palmeiras","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:bragantino","strHomeTeam":"Bahia","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:cruzeiro","strHomeTeam":"Athletico","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:coritiba","strHomeTeam":"Mirassol","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:atletico-mg:sao-paulo","strHomeTeam":"Atlético-MG","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:fluminense","strHomeTeam":"Vasco","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:internacional","strHomeTeam":"Santos","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:vitoria","strHomeTeam":"Grêmio","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:flamengo:remo","strHomeTeam":"Flamengo","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:corinthians","strHomeTeam":"Chapecoense","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"8":[{"idEvent":"hist:bragantino:botafogo","strHomeTeam":"Bragantino","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:atletico-mg","strHomeTeam":"Fluminense","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:sao-paulo:palmeiras","strHomeTeam":"São Paulo","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:gremio","strHomeTeam":"Vasco","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:santos","strHomeTeam":"Cruzeiro","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:coritiba","strHomeTeam":"Athletico","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:bahia","strHomeTeam":"Remo","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:chapecoense","strHomeTeam":"Internacional","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vitoria:mirassol","strHomeTeam":"Vitória","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:flamengo","strHomeTeam":"Corinthians","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"9":[{"idEvent":"hist:botafogo:mirassol","strHomeTeam":"Botafogo","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Botafogo","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:sao-paulo","strHomeTeam":"Internacional","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:vitoria","strHomeTeam":"Cruzeiro","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:athletico","strHomeTeam":"Bahia","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:coritiba:vasco","strHomeTeam":"Coritiba","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:corinthians","strHomeTeam":"Fluminense","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:remo","strHomeTeam":"Santos","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:atletico-mg","strHomeTeam":"Chapecoense","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:gremio","strHomeTeam":"Palmeiras","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bragantino:flamengo","strHomeTeam":"Bragantino","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"10":[{"idEvent":"hist:sao-paulo:cruzeiro","strHomeTeam":"São Paulo","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:coritiba:fluminense","strHomeTeam":"Coritiba","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:botafogo","strHomeTeam":"Vasco","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:vitoria","strHomeTeam":"Chapecoense","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:flamengo:santos","strHomeTeam":"Flamengo","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:atletico-mg:athletico","strHomeTeam":"Atlético-MG","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:internacional","strHomeTeam":"Corinthians","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:palmeiras","strHomeTeam":"Bahia","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:bragantino","strHomeTeam":"Mirassol","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:remo","strHomeTeam":"Grêmio","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"11":[{"idEvent":"hist:vitoria:sao-paulo","strHomeTeam":"Vitória","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:vasco","strHomeTeam":"Remo","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:flamengo","strHomeTeam":"Fluminense","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:bahia","strHomeTeam":"Mirassol","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:atletico-mg","strHomeTeam":"Santos","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:gremio","strHomeTeam":"Internacional","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:chapecoense","strHomeTeam":"Athletico","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:botafogo:coritiba","strHomeTeam":"Botafogo","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Botafogo","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:palmeiras","strHomeTeam":"Corinthians","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:bragantino","strHomeTeam":"Cruzeiro","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"12":[{"idEvent":"hist:vasco:sao-paulo","strHomeTeam":"Vasco","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:botafogo","strHomeTeam":"Chapecoense","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vitoria:corinthians","strHomeTeam":"Vitória","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:gremio","strHomeTeam":"Cruzeiro","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:mirassol","strHomeTeam":"Internacional","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:fluminense","strHomeTeam":"Santos","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:coritiba:atletico-mg","strHomeTeam":"Coritiba","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:athletico","strHomeTeam":"Palmeiras","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bragantino:remo","strHomeTeam":"Bragantino","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:flamengo:bahia","strHomeTeam":"Flamengo","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"13":[{"idEvent":"hist:botafogo:internacional","strHomeTeam":"Botafogo","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Botafogo","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:santos","strHomeTeam":"Bahia","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:cruzeiro","strHomeTeam":"Remo","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:sao-paulo:mirassol","strHomeTeam":"São Paulo","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:vasco","strHomeTeam":"Corinthians","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:coritiba","strHomeTeam":"Grêmio","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bragantino:palmeiras","strHomeTeam":"Bragantino","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:vitoria","strHomeTeam":"Athletico","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:chapecoense","strHomeTeam":"Fluminense","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:atletico-mg:flamengo","strHomeTeam":"Atlético-MG","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"14":[{"idEvent":"hist:botafogo:remo","strHomeTeam":"Botafogo","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Botafogo","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:santos","strHomeTeam":"Palmeiras","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vitoria:coritiba","strHomeTeam":"Vitória","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:gremio","strHomeTeam":"Athletico","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:atletico-mg","strHomeTeam":"Cruzeiro","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:flamengo:vasco","strHomeTeam":"Flamengo","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:sao-paulo:bahia","strHomeTeam":"São Paulo","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:fluminense","strHomeTeam":"Internacional","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:bragantino","strHomeTeam":"Chapecoense","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:corinthians","strHomeTeam":"Mirassol","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"15":[{"idEvent":"hist:coritiba:internacional","strHomeTeam":"Coritiba","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:vitoria","strHomeTeam":"Fluminense","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:cruzeiro","strHomeTeam":"Bahia","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:atletico-mg:botafogo","strHomeTeam":"Atlético-MG","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:palmeiras","strHomeTeam":"Remo","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:bragantino","strHomeTeam":"Santos","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:sao-paulo","strHomeTeam":"Corinthians","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:chapecoense","strHomeTeam":"Mirassol","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:flamengo","strHomeTeam":"Grêmio","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:athletico","strHomeTeam":"Vasco","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"16":[{"idEvent":"hist:atletico-mg:mirassol","strHomeTeam":"Atlético-MG","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Atlético-MG","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:internacional:vasco","strHomeTeam":"Internacional","strAwayTeam":"Vasco","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Internacional","idAwayTeam":"hist:Vasco","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:fluminense:sao-paulo","strHomeTeam":"Fluminense","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Fluminense","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:cruzeiro","strHomeTeam":"Palmeiras","strAwayTeam":"Cruzeiro","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Cruzeiro","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:coritiba","strHomeTeam":"Santos","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:botafogo:corinthians","strHomeTeam":"Botafogo","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Botafogo","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:gremio","strHomeTeam":"Bahia","strAwayTeam":"Grêmio","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Grêmio","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bragantino:vitoria","strHomeTeam":"Bragantino","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:chapecoense:remo","strHomeTeam":"Chapecoense","strAwayTeam":"Remo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Chapecoense","idAwayTeam":"hist:Remo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:flamengo","strHomeTeam":"Athletico","strAwayTeam":"Flamengo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Flamengo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"17":[{"idEvent":"hist:sao-paulo:botafogo","strHomeTeam":"São Paulo","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:São Paulo","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vitoria:internacional","strHomeTeam":"Vitória","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vitória","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:mirassol:fluminense","strHomeTeam":"Mirassol","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Mirassol","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:santos","strHomeTeam":"Grêmio","strAwayTeam":"Santos","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Santos","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:flamengo:palmeiras","strHomeTeam":"Flamengo","strAwayTeam":"Palmeiras","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Palmeiras","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:chapecoense","strHomeTeam":"Cruzeiro","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:athletico","strHomeTeam":"Remo","strAwayTeam":"Athletico","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:Athletico","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:corinthians:atletico-mg","strHomeTeam":"Corinthians","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Corinthians","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:bragantino","strHomeTeam":"Vasco","strAwayTeam":"Bragantino","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Bragantino","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:coritiba:bahia","strHomeTeam":"Coritiba","strAwayTeam":"Bahia","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Coritiba","idAwayTeam":"hist:Bahia","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}],"18":[{"idEvent":"hist:flamengo:coritiba","strHomeTeam":"Flamengo","strAwayTeam":"Coritiba","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Flamengo","idAwayTeam":"hist:Coritiba","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:athletico:mirassol","strHomeTeam":"Athletico","strAwayTeam":"Mirassol","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Athletico","idAwayTeam":"hist:Mirassol","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:gremio:corinthians","strHomeTeam":"Grêmio","strAwayTeam":"Corinthians","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Grêmio","idAwayTeam":"hist:Corinthians","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bahia:botafogo","strHomeTeam":"Bahia","strAwayTeam":"Botafogo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bahia","idAwayTeam":"hist:Botafogo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:santos:vitoria","strHomeTeam":"Santos","strAwayTeam":"Vitória","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Santos","idAwayTeam":"hist:Vitória","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:bragantino:internacional","strHomeTeam":"Bragantino","strAwayTeam":"Internacional","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Bragantino","idAwayTeam":"hist:Internacional","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:vasco:atletico-mg","strHomeTeam":"Vasco","strAwayTeam":"Atlético-MG","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Vasco","idAwayTeam":"hist:Atlético-MG","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:palmeiras:chapecoense","strHomeTeam":"Palmeiras","strAwayTeam":"Chapecoense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Palmeiras","idAwayTeam":"hist:Chapecoense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:cruzeiro:fluminense","strHomeTeam":"Cruzeiro","strAwayTeam":"Fluminense","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Cruzeiro","idAwayTeam":"hist:Fluminense","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true},{"idEvent":"hist:remo:sao-paulo","strHomeTeam":"Remo","strAwayTeam":"São Paulo","strHomeTeamBadge":"","strAwayTeamBadge":"","idHomeTeam":"hist:Remo","idAwayTeam":"hist:São Paulo","dateEvent":"2026-01-01","strTimestamp":"2026-01-01T00:00:00Z","strTime":"00:00:00","strStatus":"NS","intHomeScore":null,"intAwayScore":null,"historical":true}]};
+const TOTAL_ROUNDS = 18;
+const MANUAL_FIXTURES = {"1": [["Atlético-MG", "Palmeiras"], ["Internacional", "Athletico"], ["Coritiba", "Bragantino"], ["Vitória", "Remo"], ["Fluminense", "Grêmio"], ["Corinthians", "Bahia"], ["Chapecoense", "Santos"], ["São Paulo", "Flamengo"], ["Mirassol", "Vasco"], ["Botafogo", "Cruzeiro"]], "2": [["Flamengo", "Internacional"], ["Bragantino", "Atlético-MG"], ["Santos", "São Paulo"], ["Remo", "Mirassol"], ["Palmeiras", "Vitória"], ["Grêmio", "Botafogo"], ["Vasco", "Chapecoense"], ["Bahia", "Fluminense"], ["Cruzeiro", "Coritiba"], ["Athletico", "Corinthians"]], "3": [["Vitória", "Flamengo"], ["Mirassol", "Cruzeiro"], ["Chapecoense", "Coritiba"], ["Atlético-MG", "Remo"], ["Vasco", "Bahia"], ["São Paulo", "Grêmio"], ["Athletico", "Santos"], ["Fluminense", "Botafogo"], ["Corinthians", "Bragantino"], ["Internacional", "Palmeiras"]], "4": [["Bragantino", "Athletico"], ["Remo", "Internacional"], ["Coritiba", "São Paulo"], ["Cruzeiro", "Corinthians"], ["Palmeiras", "Fluminense"], ["Grêmio", "Atlético-MG"], ["Santos", "Vasco"], ["Flamengo", "Mirassol"], ["Botafogo", "Vitória"], ["Bahia", "Chapecoense"]], "5": [["Mirassol", "Santos"], ["Atlético-MG", "Internacional"], ["Bahia", "Vitória"], ["Flamengo", "Cruzeiro"], ["Corinthians", "Coritiba"], ["Remo", "Fluminense"], ["Vasco", "Palmeiras"], ["São Paulo", "Chapecoense"], ["Grêmio", "Bragantino"], ["Athletico", "Botafogo"]], "6": [["Vitória", "Atlético-MG"], ["Botafogo", "Flamengo"], ["Fluminense", "Athletico"], ["Santos", "Corinthians"], ["Internacional", "Bahia"], ["Palmeiras", "Mirassol"], ["Coritiba", "Remo"], ["Bragantino", "São Paulo"], ["Cruzeiro", "Vasco"], ["Chapecoense", "Grêmio"]], "7": [["Palmeiras", "Botafogo"], ["Bahia", "Bragantino"], ["Athletico", "Cruzeiro"], ["Mirassol", "Coritiba"], ["Atlético-MG", "São Paulo"], ["Vasco", "Fluminense"], ["Santos", "Internacional"], ["Grêmio", "Vitória"], ["Flamengo", "Remo"], ["Chapecoense", "Corinthians"]], "8": [["Bragantino", "Botafogo"], ["Fluminense", "Atlético-MG"], ["São Paulo", "Palmeiras"], ["Vasco", "Grêmio"], ["Cruzeiro", "Santos"], ["Athletico", "Coritiba"], ["Remo", "Bahia"], ["Internacional", "Chapecoense"], ["Vitória", "Mirassol"], ["Corinthians", "Flamengo"]], "9": [["Botafogo", "Mirassol"], ["Internacional", "São Paulo"], ["Cruzeiro", "Vitória"], ["Bahia", "Athletico"], ["Coritiba", "Vasco"], ["Fluminense", "Corinthians"], ["Santos", "Remo"], ["Chapecoense", "Atlético-MG"], ["Palmeiras", "Grêmio"], ["Bragantino", "Flamengo"]], "10": [["São Paulo", "Cruzeiro"], ["Coritiba", "Fluminense"], ["Vasco", "Botafogo"], ["Chapecoense", "Vitória"], ["Flamengo", "Santos"], ["Atlético-MG", "Athletico"], ["Corinthians", "Internacional"], ["Bahia", "Palmeiras"], ["Mirassol", "Bragantino"], ["Grêmio", "Remo"]], "11": [["Vitória", "São Paulo"], ["Remo", "Vasco"], ["Fluminense", "Flamengo"], ["Mirassol", "Bahia"], ["Santos", "Atlético-MG"], ["Internacional", "Grêmio"], ["Athletico", "Chapecoense"], ["Botafogo", "Coritiba"], ["Corinthians", "Palmeiras"], ["Cruzeiro", "Bragantino"]], "12": [["Vasco", "São Paulo"], ["Chapecoense", "Botafogo"], ["Vitória", "Corinthians"], ["Cruzeiro", "Grêmio"], ["Internacional", "Mirassol"], ["Santos", "Fluminense"], ["Coritiba", "Atlético-MG"], ["Palmeiras", "Athletico"], ["Bragantino", "Remo"], ["Flamengo", "Bahia"]], "13": [["Botafogo", "Internacional"], ["Bahia", "Santos"], ["Remo", "Cruzeiro"], ["São Paulo", "Mirassol"], ["Corinthians", "Vasco"], ["Grêmio", "Coritiba"], ["Bragantino", "Palmeiras"], ["Athletico", "Vitória"], ["Fluminense", "Chapecoense"], ["Atlético-MG", "Flamengo"]], "14": [["Botafogo", "Remo"], ["Palmeiras", "Santos"], ["Vitória", "Coritiba"], ["Athletico", "Grêmio"], ["Cruzeiro", "Atlético-MG"], ["Flamengo", "Vasco"], ["São Paulo", "Bahia"], ["Internacional", "Fluminense"], ["Chapecoense", "Bragantino"], ["Mirassol", "Corinthians"]], "15": [["Coritiba", "Internacional"], ["Fluminense", "Vitória"], ["Bahia", "Cruzeiro"], ["Atlético-MG", "Botafogo"], ["Remo", "Palmeiras"], ["Santos", "Bragantino"], ["Corinthians", "São Paulo"], ["Mirassol", "Chapecoense"], ["Grêmio", "Flamengo"], ["Vasco", "Athletico"]], "16": [["Atlético-MG", "Mirassol"], ["Internacional", "Vasco"], ["Fluminense", "São Paulo"], ["Palmeiras", "Cruzeiro"], ["Santos", "Coritiba"], ["Botafogo", "Corinthians"], ["Bahia", "Grêmio"], ["Bragantino", "Vitória"], ["Chapecoense", "Remo"], ["Athletico", "Flamengo"]], "17": [["São Paulo", "Botafogo"], ["Vitória", "Internacional"], ["Mirassol", "Fluminense"], ["Grêmio", "Santos"], ["Flamengo", "Palmeiras"], ["Cruzeiro", "Chapecoense"], ["Remo", "Athletico"], ["Corinthians", "Atlético-MG"], ["Vasco", "Bragantino"], ["Coritiba", "Bahia"]], "18": [["Flamengo", "Coritiba"], ["Athletico", "Mirassol"], ["Grêmio", "Corinthians"], ["Bahia", "Botafogo"], ["Santos", "Vitória"], ["Bragantino", "Internacional"], ["Vasco", "Atlético-MG"], ["Palmeiras", "Chapecoense"], ["Cruzeiro", "Fluminense"], ["Remo", "São Paulo"]]};
 
 // ── SENHAS ─────────────────────────────────────────────────────────────────
 const GATE_PASS  = "mantas2026";
@@ -429,7 +437,7 @@ const ST = {
   user:              null,
   predictions:       {},   // {pid: {roundNum: {eventId:{home,away,firstGoal}}}}
   results:           {},   // {eventId: {home,away}}  — override do admin
-  firstGoals:        {},   // {eventId: playerName|null}  — cache da API
+  firstGoals:        {},   // API desativada; mantido por compatibilidade
   firstGoalOverrides:{},   // {eventId: playerName}       — gabarito manual admin
   pins:              {},
   deadlines:         {},   // {roundNum: isoString}
@@ -441,8 +449,8 @@ const ST = {
   adminResultsRound: null,
   jogosRound:        null,
   rankTab:           "geral",
-  rankMonth:         new Date().getMonth()+1,
-  apiLoaded:         false,
+  rankMonth:         1,
+  apiLoaded:         false, // tabela manual carregada
   participants:      [...PARTICIPANTS_DEFAULT],
   squads:            {},   // {teamId: {name, players}}
   initialScores:     {},   // {pid: pts} — saldo histórico anterior ao sistema
@@ -454,22 +462,8 @@ const $    = id => document.getElementById(id);
 const show = id => $(id).classList.remove("hidden");
 const hide = id => $(id).classList.add("hidden");
 
-function shieldImg(url, alt){
-  if(!url) return "";
-  return `<img class="shield" src="${url}" alt="${alt}" onerror="this.classList.add('shield-err')">`;
-}
-function teamHTML(name, shieldUrl){
-  return `<span class="team-inline">${shieldImg(shieldUrl,name)}<span>${name}</span></span>`;
-}
-function esc(v){
-  return String(v??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-}
-function hasOwn(obj,key){
-  return Object.prototype.hasOwnProperty.call(obj||{}, key);
-}
-
 function teamKey(name){
-  let n=String(name||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+  let n=String(name||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
   n=n.replace(/\./g,"").replace(/\s+/g," ").trim();
   if(n.includes("atletico")&&n.includes("mg")) return "atletico-mg";
   if(n==="athletico"||n.includes("athletico paranaense")||n.includes("athletico-pr")||n.includes("athletico pr")) return "athletico";
@@ -493,27 +487,59 @@ function teamKey(name){
   if(n.includes("remo")) return "remo";
   return n.replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 }
-function teamInfoByName(name){
-  const key=teamKey(name);
-  for(const list of Object.values(ST.games||{})){
-    for(const g of list||[]){
-      if(teamKey(g.strHomeTeam)===key) return {id:g.idHomeTeam,badge:g.strHomeTeamBadge||""};
-      if(teamKey(g.strAwayTeam)===key) return {id:g.idAwayTeam,badge:g.strAwayTeamBadge||""};
-    }
-  }
-  return {id:"hist:"+key,badge:""};
+const TEAM_ABBR={
+  "atletico-mg":"CAM","athletico":"CAP","bahia":"BAH","botafogo":"BOT","bragantino":"RBB",
+  "chapecoense":"CHA","corinthians":"COR","coritiba":"CFC","cruzeiro":"CRU","flamengo":"FLA",
+  "fluminense":"FLU","gremio":"GRE","internacional":"INT","mirassol":"MIR","palmeiras":"PAL",
+  "remo":"REM","santos":"SAN","sao-paulo":"SAO","vasco":"VAS","vitoria":"VIT"
+};
+function shieldImg(url, alt){
+  const key=teamKey(alt), abbr=TEAM_ABBR[key]||String(alt||"?").slice(0,3).toUpperCase();
+  if(!url) return `<span class="shield shield-fallback team-${key||'default'}" title="${esc(alt)}">${esc(abbr)}</span>`;
+  return `<img class="shield" src="${url}" alt="${esc(alt)}" onerror="this.classList.add('shield-err')">`;
 }
-function gamesForRound(rNum){
-  const hist=HISTORICAL_GAMES[String(rNum)];
-  if(hist){
-    return hist.map(g=>{
-      const h=teamInfoByName(g.strHomeTeam);
-      const a=teamInfoByName(g.strAwayTeam);
-      return {...g,idHomeTeam:h.id||g.idHomeTeam,idAwayTeam:a.id||g.idAwayTeam,
-        strHomeTeamBadge:h.badge||g.strHomeTeamBadge,strAwayTeamBadge:a.badge||g.strAwayTeamBadge};
-    });
-  }
-  return ST.games[rNum]||[];
+function teamHTML(name, shieldUrl){
+  return `<span class="team-inline">${shieldImg(shieldUrl,name)}<span>${esc(name)}</span></span>`;
+}
+function basicKey(s){
+  return String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+}
+function teamKey(name){
+  const n=basicKey(name);
+  if((n.includes("atletico")||n.includes("atl-mg"))&&(n.includes("mineiro")||n.includes("mg")||!n.includes("athletico"))) return "atletico-mg";
+  if(n.includes("athletico")||n.includes("paranaense")) return "athletico";
+  if(n.includes("bragantino")) return "bragantino";
+  if(n.includes("coritiba")) return "coritiba";
+  if(n.includes("vitoria")) return "vitoria";
+  if(n.includes("remo")) return "remo";
+  if(n.includes("fluminense")) return "fluminense";
+  if(n.includes("gremio")) return "gremio";
+  if(n.includes("corinthians")) return "corinthians";
+  if(n.includes("bahia")) return "bahia";
+  if(n.includes("chapecoense")) return "chapecoense";
+  if(n.includes("santos")) return "santos";
+  if(n.includes("sao-paulo")||(n.includes("sao")&&n.includes("paulo"))) return "sao-paulo";
+  if(n.includes("flamengo")) return "flamengo";
+  if(n.includes("mirassol")) return "mirassol";
+  if(n.includes("vasco")) return "vasco";
+  if(n.includes("botafogo")) return "botafogo";
+  if(n.includes("cruzeiro")) return "cruzeiro";
+  if(n.includes("palmeiras")) return "palmeiras";
+  if(n.includes("internacional")) return "internacional";
+  return n;
+}
+function histGameKey(home, away){
+  return `hist:${teamKey(home)}:${teamKey(away)}`;
+}
+function getPredictionForGame(roundPreds, game){
+  if(!roundPreds||!game) return null;
+  return roundPreds[game.idEvent] || roundPreds[histGameKey(game.strHomeTeam,game.strAwayTeam)] || null;
+}
+function esc(v){
+  return String(v??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function hasOwn(obj,key){
+  return Object.prototype.hasOwnProperty.call(obj||{}, key);
 }
 function scoreOpts(val=""){
   let s=`<option value="">-</option>`;
@@ -534,7 +560,7 @@ function getRoundDeadline(rNum){
   const iso = ST.deadlines[rNum];
   if(iso) return new Date(iso);
   // fallback: 1h antes do primeiro jogo da rodada
-  const games = gamesForRound(rNum);
+  const games = ST.games[rNum]||[];
   if(games.length){
     const first = new Date(games[0].strTimestamp);
     first.setHours(first.getHours()-1);
@@ -552,7 +578,7 @@ function countdownStr(dl){
 }
 function nextRound(){
   const now=new Date();
-  return ST.allRounds.find(r=>gamesForRound(r).length>0 && getRoundDeadline(r)>now)||null;
+  return ST.allRounds.find(r=>(ST.games[r]||[]).length>0 && getRoundDeadline(r)>now)||null;
 }
 
 // Formata "2026-01-28" → "28/01"
@@ -563,44 +589,24 @@ function fmtTime(t){ return t.slice(0,5); }
 // Mês "dono" de uma rodada = mês do 1º jogo da rodada
 function roundMonth(rNum){
   if(ST.roundMeta[rNum]?.month) return ST.roundMeta[rNum].month;
-  const games=gamesForRound(rNum);
+  const games=ST.games[rNum]||[];
   if(!games.length) return null;
   return new Date(games[0].strTimestamp).getMonth()+1;
 }
 
-// Placar real: usa override do admin se existir, senão usa dado da API
+// Placar real: somente gabarito manual salvo pelo admin
 function getResult(eventId){
-  if(ST.results[eventId]) return ST.results[eventId];
-  for(const rNum of ST.allRounds){
-    const g=gamesForRound(rNum).find(e=>e.idEvent===eventId);
-    if(g && g.intHomeScore!=null && g.intAwayScore!=null && g.strStatus==="FT"){
-      return {home:String(g.intHomeScore), away:String(g.intAwayScore)};
-    }
-  }
+  return ST.results[eventId]||null;
+}
+
+// Primeiro gol: somente gabarito manual salvo pelo admin
+function getFirstGoal(eventId){
+  if(hasOwn(ST.firstGoalOverrides,eventId)) return ST.firstGoalOverrides[eventId]||null;
   return null;
 }
 
-// Primeiro gol: usa override do admin se existir, senão usa cache da API
-function getFirstGoal(eventId){
-  if(hasOwn(ST.firstGoalOverrides,eventId)) return ST.firstGoalOverrides[eventId]||null;
-  if(ST.firstGoals[eventId]!==undefined) return ST.firstGoals[eventId]; // null = sem gol
-  return null; // ainda não carregado
-}
-
-// Busca timeline de um jogo e extrai o primeiro gol
-async function fetchFirstGoal(eventId){
-  if(ST.firstGoals[eventId]!==undefined) return;
-  try{
-    const res=await fetch(`${TSDB}/lookuptimeline.php?id=${eventId}`);
-    const data=await res.json();
-    const goals=(data.timeline||[])
-      .filter(e=>e.strTimeline==="Goal")
-      .sort((a,b)=>+a.intTime - +b.intTime);
-    ST.firstGoals[eventId] = goals.length ? goals[0].strPlayer : null;
-  } catch(e){
-    ST.firstGoals[eventId]=null;
-  }
-}
+// API desativada: mantida como no-op para preservar chamadas existentes
+async function fetchFirstGoal(eventId){ return; }
 
 function squadByTeam(teamId, teamName){
   const id=String(teamId||"");
@@ -663,19 +669,17 @@ function calcGameScore(pred, res, predFirstGoal, realFirstGoal){
   if(!res||res.home==null||res.away==null) return {pts:0,exact:false,correct:false,goalPt:false};
   if(!pred||pred.home==null||pred.away==null) return {pts:0,exact:false,correct:false,goalPt:false};
   const pH=+pred.home,pA=+pred.away,rH=+res.home,rA=+res.away;
-  let pts=0,exact=false,correct=false;
-  if(pH===rH&&pA===rA){ pts=25; exact=true; correct=true; }
-  else if(Math.sign(pH-pA)===Math.sign(rH-rA)){ pts=10; correct=true; }
-  // Regra especial: cravada 0x0 vale 30 pontos direto, pois também acerta a ausência de gol.
-  let goalPt=false;
-  if(exact && pH===0 && pA===0 && rH===0 && rA===0){
-    pts=30;
-    goalPt=true;
-    return {pts,exact,correct,goalPt};
+  let pts=0,exact=false,correct=false,goalPt=false;
+  if(pH===rH&&pA===rA){
+    exact=true; correct=true;
+    // Regra especial do bolão: 0x0 cravado vale 30 direto, pois acerta também a ausência de gol.
+    if(pH===0&&pA===0&&rH===0&&rA===0){ pts=30; goalPt=true; }
+    else pts=25;
   }
+  else if(Math.sign(pH-pA)===Math.sign(rH-rA)){ pts=10; correct=true; }
   // primeiro gol: +5 se acertou (case-insensitive, ignora acentos)
-  if(predFirstGoal && realFirstGoal){
-    const norm=s=>s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
+  if(!(pH===0&&pA===0&&rH===0&&rA===0) && predFirstGoal && realFirstGoal){
+    const norm=s=>s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
     if(norm(predFirstGoal)===norm(realFirstGoal)){ pts+=5; goalPt=true; }
   }
   return {pts,exact,correct,goalPt};
@@ -691,9 +695,9 @@ function calcScore(pid, monthFilter=null){
   for(const rNum of ST.allRounds){
     if(monthFilter!==null && roundMonth(rNum)!==monthFilter) continue;
     const roundPreds=(ST.predictions[pid]||{})[rNum]||{};
-    gamesForRound(rNum).forEach(g=>{
+    (ST.games[rNum]||[]).forEach(g=>{
       const res=getResult(g.idEvent);
-      const pred=roundPreds[g.idEvent];
+      const pred=getPredictionForGame(roundPreds,g);
       const realFG=getFirstGoal(g.idEvent);
       const predFG=pred?.firstGoal||null;
       const sc=calcGameScore(pred,res,predFG,realFG);
@@ -711,32 +715,35 @@ function buildRanking(monthFilter=null){
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact||b.correct-a.correct);
 }
 
-// ── THESPORTSDB API ────────────────────────────────────────────────────────
-// Busca uma rodada por vez. Cache em ST.games para não rebuscar.
-async function fetchRound(rNum){
-  if(ST.games[rNum]) return; // já em cache
-  try{
-    const res=await fetch(`${TSDB}/eventsround.php?id=${LEAGUE_ID}&r=${rNum}&s=${SEASON}`);
-    const data=await res.json();
-    const events=(data.events||[]).sort((a,b)=>new Date(a.strTimestamp)-new Date(b.strTimestamp));
-    ST.games[rNum]=events;
-    if(events.length) ST.roundMeta[rNum]={month: new Date(events[0].strTimestamp).getMonth()+1};
-  } catch(e){
-    ST.games[rNum]=[];
-    console.warn(`TheSportsDB R${rNum}:`, e);
-  }
+// ── TABELA MANUAL ──────────────────────────────────────────────────────────
+function makeManualGame(rNum, idx, home, away){
+  const hk=teamKey(home), ak=teamKey(away);
+  const date=`2026-01-${String(Math.min(28, rNum)).padStart(2,"0")}`;
+  return {
+    idEvent:`hist:${hk}:${ak}`,
+    strHomeTeam:home,
+    strAwayTeam:away,
+    strHomeTeamBadge:"",
+    strAwayTeamBadge:"",
+    idHomeTeam:hk,
+    idAwayTeam:ak,
+    dateEvent:date,
+    strTimestamp:`${date}T${String(12+Math.floor(idx/2)).padStart(2,"0")}:00:00Z`,
+    strTime:`${String(12+Math.floor(idx/2)).padStart(2,"0")}:00:00`,
+    strStatus:"NS",
+    intHomeScore:null,
+    intAwayScore:null,
+    manual:true
+  };
 }
-
-// Carrega todas as rodadas em paralelo (rounds 1-38).
-// Rodadas sem jogos cadastrados retornam array vazio.
 async function fetchAllGames(){
-  const nums=Array.from({length:TOTAL_ROUNDS},(_,i)=>i+1);
-  await Promise.all(nums.map(r=>fetchRound(r)));
-  ST.allRounds=nums.filter(r=>ST.games[r]?.length>0);
-  // garante que rodadas futuras (sem jogos ainda) ainda aparecem no select
-  // com array vazio — inclui todas as 38 no select
-  nums.forEach(r=>{ if(!ST.games[r]) ST.games[r]=[]; });
-  ST.allRounds=nums; // mostra todas as 38 rodadas
+  ST.games={};
+  Object.entries(MANUAL_FIXTURES).forEach(([r, list])=>{
+    const rNum=+r;
+    ST.games[rNum]=list.map(([home,away],idx)=>makeManualGame(rNum,idx,home,away));
+    ST.roundMeta[rNum]={month:new Date(ST.games[rNum][0].strTimestamp).getMonth()+1};
+  });
+  ST.allRounds=Object.keys(MANUAL_FIXTURES).map(Number).sort((a,b)=>a-b);
   ST.apiLoaded=true;
 }
 
@@ -863,7 +870,7 @@ function renderHome(){
   // Últimos resultados: rodadas mais recentes primeiro
   let html="";
   for(const rNum of [...ST.allRounds].reverse()){
-    for(const g of [...gamesForRound(rNum)].reverse()){
+    for(const g of [...(ST.games[rNum]||[])].reverse()){
       const res=getResult(g.idEvent);
       if(res&&res.home!=null){
         html+=`<div class="result">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)} <b>${res.home}–${res.away}</b> ${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}<div class="muted small">Rodada ${rNum} · ${fmtDate(g.dateEvent)}, ${fmtTime(g.strTime)}</div></div>`;
@@ -876,7 +883,7 @@ function renderHome(){
 
 // ── RENDER: PALPITES ───────────────────────────────────────────────────────
 async function renderPalpites(){
-  if(!ST.allRounds.length){$("pred-games-list").innerHTML=`<div class="card"><p class="muted loading">Carregando jogos da API...</p></div>`;return;}
+  if(!ST.allRounds.length){$("pred-games-list").innerHTML=`<div class="card"><p class="muted loading">Carregando jogos...</p></div>`;return;}
   if(!ST.predRound) ST.predRound=ST.allRounds[0];
   fillRoundSelect("pred-round-select", ST.predRound);
 
@@ -886,7 +893,7 @@ async function renderPalpites(){
   else if(closed){badge.className="status-badge lock";badge.textContent="🔒 Rodada fechada";}
   else{badge.className="status-badge ok";badge.textContent="✅ Aberto para palpites";}
 
-  const games=gamesForRound(rNum);
+  const games=ST.games[rNum]||[];
   $("pred-game-count").textContent=`${games.length} jogos`;
   if(!games.length){
     $("pred-games-list").innerHTML=`<div class="card"><p class="muted">Nenhum jogo disponível nesta rodada.</p></div>`;
@@ -903,7 +910,7 @@ async function renderPalpites(){
   for(const [date,gs] of Object.entries(byDate)){
     html+=`<div class="day">${fmtDate(date)}/2026</div>`;
     gs.forEach(g=>{
-      const p=myPreds[g.idEvent]||{};
+      const p=getPredictionForGame(myPreds,g)||{};
       const realFG=getFirstGoal(g.idEvent);
       const fgHint = realFG ? `<span style="color:var(--greenText);font-size:12px">✅ ${realFG}</span>` : "";
       html+=`<div class="prediction-row">
@@ -938,7 +945,7 @@ async function renderTropa(){
     $("troop-content").innerHTML=`<div class="card"><p class="muted">Palpites liberados após o fechamento da rodada.</p></div>`;
     return;
   }
-  const games=gamesForRound(rNum);
+  const games=ST.games[rNum]||[];
   if(!games.length){$("troop-content").innerHTML=`<div class="card"><p class="muted">Nenhum jogo nesta rodada.</p></div>`;return;}
 
   await Promise.all(games.filter(g=>g.strStatus==="FT").map(g=>fetchFirstGoal(g.idEvent)));
@@ -955,7 +962,7 @@ async function renderTropa(){
   const rows=ST.participants.map(p=>{
     const roundPreds=((ST.predictions[p.id]||{})[rNum])||{};
     const cells=games.map(g=>{
-      const pr=roundPreds[g.idEvent]||{};
+      const pr=getPredictionForGame(roundPreds,g)||{};
       const res=getResult(g.idEvent);
       const realFG=getFirstGoal(g.idEvent);
       const isMe=ST.user?.id===p.id;
@@ -1011,7 +1018,7 @@ function renderJogos(){
   if(!ST.jogosRound) ST.jogosRound=ST.allRounds[0];
   fillRoundSelect("jogos-round-select", ST.jogosRound);
 
-  const rNum=ST.jogosRound, games=gamesForRound(rNum);
+  const rNum=ST.jogosRound, games=ST.games[rNum]||[];
   if(!games.length){$("jogos-list").innerHTML=`<div class="card"><p class="muted">Nenhum jogo nesta rodada.</p></div>`;return;}
 
   const byDate={};
@@ -1025,9 +1032,9 @@ function renderJogos(){
       const sc=res&&res.home!=null
         ?`<div style="text-align:center;font-weight:800;font-size:18px;white-space:nowrap">${res.home}<span style="color:var(--muted);font-weight:400;margin:0 2px">–</span>${res.away}</div>`
         :`<div style="text-align:center;font-weight:700;color:var(--muted);white-space:nowrap">X</div>`;
-      const timeOrFT=finished
-        ?`<span style="font-size:11px;color:var(--greenText);font-weight:700">FT</span>`
-        :`<span style="font-size:12px;color:var(--muted)">${fmtTime(g.strTime)}</span>`;
+      const timeOrFT=res&&res.home!=null
+        ?`<span style="font-size:11px;color:var(--greenText);font-weight:700">OK</span>`
+        :`<span style="font-size:12px;color:var(--muted)">Manual</span>`;
       html+=`<div class="prediction-row" style="grid-template-columns:1.3fr 80px 1.3fr 72px">
         <div class="team-r">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}</div>
         ${sc}
@@ -1048,7 +1055,7 @@ function teamRecordFromGame(table, id, name, badge){
 function buildClassificacao(){
   const table={};
   ST.allRounds.forEach(rNum=>{
-    gamesForRound(rNum).forEach(g=>{
+    (ST.games[rNum]||[]).forEach(g=>{
       const h=teamRecordFromGame(table,g.idHomeTeam,g.strHomeTeam,g.strHomeTeamBadge);
       const a=teamRecordFromGame(table,g.idAwayTeam,g.strAwayTeam,g.strAwayTeamBadge);
       const res=getResult(g.idEvent);
@@ -1167,7 +1174,7 @@ function renderAdminPalpites(){
   const rNum=+$("admin-palpites-round").value;
   const container=$("admin-palpites-games");
   if(!pid||!rNum){container.innerHTML=`<p class="muted">Selecione participante e rodada.</p>`;return;}
-  const games=gamesForRound(rNum);
+  const games=ST.games[rNum]||[];
   if(!games.length){container.innerHTML=`<p class="muted">Nenhum jogo nesta rodada.</p>`;return;}
   const preds=((ST.predictions[pid]||{})[rNum])||{};
   const byDate={};
@@ -1176,7 +1183,7 @@ function renderAdminPalpites(){
   for(const [date,gs] of Object.entries(byDate)){
     html+=`<div class="day">${fmtDate(date)}/2026</div>`;
     gs.forEach(g=>{
-      const p=preds[g.idEvent]||{};
+      const p=getPredictionForGame(preds,g)||{};
       const realFG=getFirstGoal(g.idEvent);
       const fgHint=realFG?`<span style="color:var(--greenText);font-size:12px">✅ ${realFG}</span>`:"";
       html+=`<div class="prediction-row">
@@ -1240,32 +1247,23 @@ async function removePlayer(tid, idx){
 }
 
 function renderAdminResults(){
-  const rNum=ST.adminResultsRound, games=gamesForRound(rNum);
+  const rNum=ST.adminResultsRound, games=ST.games[rNum]||[];
   if(!games.length){$("admin-results-games").innerHTML=`<p class="muted">Nenhum jogo nesta rodada.</p>`;return;}
-  const byDate={};
-  games.forEach(g=>{(byDate[g.dateEvent]=byDate[g.dateEvent]||[]).push(g);});
-  let html="";
-  for(const [date,gs] of Object.entries(byDate)){
-    html+=`<div class="day">${fmtDate(date)}/2026</div>`;
-    gs.forEach(g=>{
-      // preenchimento: override admin > placar da API
-      const apiRes=(g.strStatus==="FT"&&g.intHomeScore!=null)?{home:String(g.intHomeScore),away:String(g.intAwayScore)}:null;
-      const override=ST.results[g.idEvent];
-      const res=override||apiRes||{};
-      const apiNote=apiRes?`<span class="muted small"> (API: ${apiRes.home}–${apiRes.away})</span>`:"";
-      const savedFG=hasOwn(ST.firstGoalOverrides,g.idEvent)?ST.firstGoalOverrides[g.idEvent]:getFirstGoal(g.idEvent);
-      html+=`<div class="prediction-row">
-        <div class="team-r">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}</div>
-        <select class="score-select admin-score" data-eid="${g.idEvent}" data-side="home">${scoreOpts(res.home)}</select>
-        <div style="text-align:center;font-weight:700">X</div>
-        <select class="score-select admin-score" data-eid="${g.idEvent}" data-side="away">${scoreOpts(res.away)}</select>
-        <div class="team-l">${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}${apiNote}</div>
-        <div class="game-time">${fmtTime(g.strTime)}</div>
-      </div>
-      ${buildFirstGoalRow(g.idEvent,g.idHomeTeam,g.strHomeTeam,g.idAwayTeam,g.strAwayTeam,savedFG||null,"")}
-      <div class="first-goal-admin-note">Gabarito do 1º gol da partida.</div>`;
-    });
-  }
+  let html=`<div class="day">Rodada ${rNum}</div>`;
+  games.forEach(g=>{
+    const res=ST.results[g.idEvent]||{};
+    const savedFG=hasOwn(ST.firstGoalOverrides,g.idEvent)?ST.firstGoalOverrides[g.idEvent]:null;
+    html+=`<div class="prediction-row">
+      <div class="team-r">${teamHTML(g.strHomeTeam,g.strHomeTeamBadge)}</div>
+      <select class="score-select admin-score" data-eid="${g.idEvent}" data-side="home">${scoreOpts(res.home)}</select>
+      <div style="text-align:center;font-weight:700">X</div>
+      <select class="score-select admin-score" data-eid="${g.idEvent}" data-side="away">${scoreOpts(res.away)}</select>
+      <div class="team-l">${teamHTML(g.strAwayTeam,g.strAwayTeamBadge)}</div>
+      <div class="game-time">Manual</div>
+    </div>
+    ${buildFirstGoalRow(g.idEvent,g.idHomeTeam,g.strHomeTeam,g.idAwayTeam,g.strAwayTeam,savedFG||null,"")}
+    <div class="first-goal-admin-note">Gabarito do 1º gol da partida. Em 0x0, deixe vazio.</div>`;
+  });
   $("admin-results-games").innerHTML=html;
 }
 
